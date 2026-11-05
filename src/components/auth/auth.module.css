@@ -1,0 +1,684 @@
+/* Sign-in and sign-up pages. Same visual language as the rest of the site
+   (home.module.css / site-header.module.css): light Outfit headings, small
+   teal eyebrows, pill fields on #f4f6f9 and pill buttons. */
+.shell {
+  --auth-ink: #242323;
+  --auth-muted: #617185;
+  --auth-label: #5b6a7d;
+  --auth-line: #dfe6ef;
+  --auth-line-hover: #cbd3de;
+  --auth-field: #f4f6f9;
+  --auth-card: #fff;
+  --auth-teal: #0f9b98;
+  --auth-aqua: #ccfbf1;
+  --auth-green: #16b364;
+  --auth-green-hover: #129a56;
+  --auth-gold: #b7791f;
+  --auth-danger: #ba3b24;
+  --auth-danger-soft: #fdf2f0;
+  --auth-danger-line: #f3cdc4;
+  --auth-ok-soft: #f0fdf9;
+  --auth-ok-line: #b7ece2;
+
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  background: var(--auth-card);
+  color: var(--auth-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.shell * {
+  box-sizing: border-box;
+}
+/* Links and buttons keep a keyboard outline; text fields use their own quiet focus state. */
+.shell :is(a, button):focus-visible {
+  outline: 3px solid var(--auth-teal);
+  outline-offset: 3px;
+}
+
+/* ---------- Photo side ---------- */
+.hero {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 48px 44px;
+}
+.heroImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 25, 34, 0.18) 0%,
+    rgba(5, 25, 34, 0.38) 50%,
+    rgba(5, 25, 34, 0.78) 100%
+  );
+  z-index: 1;
+}
+.hero > * {
+  position: relative;
+  z-index: 2;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-outfit), sans-serif;
+  font-weight: 700;
+  font-size: 21px;
+  color: #fff;
+  text-decoration: none;
+  width: fit-content;
+}
+.heroEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--auth-aqua);
+}
+.heroEyebrow span,
+.caption span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.heroCopy h2 {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 30px;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  max-width: 18ch;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
+}
+.heroCopy p {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.86);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.chips span {
+  padding: 5px 12px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(6px);
+  font-size: 12px;
+  font-weight: 500;
+}
+.trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.84);
+}
+.trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- Form side ---------- */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 24px 48px 36px;
+}
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--auth-muted);
+  text-decoration: none;
+  padding: 7px 12px 7px 9px;
+  border-radius: 30px;
+  border: 1px solid transparent;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.back:hover {
+  color: var(--auth-teal);
+  border-color: var(--auth-line);
+  background: var(--auth-field);
+}
+.mobileBrand {
+  display: none;
+}
+.body {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  padding: 32px 0;
+}
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--auth-teal);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.title {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+  font-weight: 600;
+  margin: 8px 0 6px;
+  color: var(--auth-ink);
+}
+.subtitle {
+  margin: 0 0 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--auth-muted);
+}
+.progress {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 16px;
+}
+.progress span {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--auth-line);
+}
+.progress .done {
+  background: #9fe3c3;
+}
+.progress .current {
+  background: var(--auth-green);
+}
+.footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--auth-line);
+  text-align: center;
+  font-size: 13px;
+  color: var(--auth-muted);
+}
+.footer a,
+.link {
+  color: var(--auth-teal);
+  font-weight: 600;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  cursor: pointer;
+}
+.footer a:hover,
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Form controls ---------- */
+.form {
+  display: grid;
+  gap: 14px;
+}
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--auth-label);
+  padding-left: 4px;
+}
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.control > svg {
+  position: absolute;
+  left: 16px;
+  color: #67788e;
+  pointer-events: none;
+}
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px 0 44px;
+  border-radius: 36px;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-field);
+  color: var(--auth-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+.input:hover {
+  border-color: var(--auth-line-hover);
+}
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  border-color: var(--auth-line-hover);
+  background: var(--auth-card);
+  box-shadow: none;
+}
+.inputError,
+.inputError:hover {
+  border-color: #e7a99b;
+}
+.withToggle {
+  padding-right: 48px;
+}
+.toggle {
+  position: absolute;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #67788e;
+}
+.toggle:hover {
+  background: #e8edf3;
+  color: var(--auth-teal);
+}
+.hint {
+  font-size: 11.5px;
+  color: var(--auth-muted);
+  padding-left: 4px;
+}
+.error {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--auth-danger);
+  padding-left: 4px;
+}
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.labelRow a {
+  font-size: 12px;
+}
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--auth-ink);
+  cursor: pointer;
+  padding-left: 4px;
+}
+.check input {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--auth-green);
+  flex: none;
+}
+.banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: var(--auth-danger-soft);
+  border: 1px solid var(--auth-danger-line);
+  color: var(--auth-danger);
+}
+.banner svg {
+  flex: none;
+  margin-top: 1px;
+}
+.bannerOk {
+  background: var(--auth-ok-soft);
+  border-color: var(--auth-ok-line);
+  color: #0b6f5c;
+}
+.primary {
+  height: 46px;
+  border-radius: 30px;
+  border: 1px solid transparent;
+  background: var(--auth-green);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+  width: 100%;
+  text-decoration: none;
+  margin-top: 4px;
+}
+.primary:hover:not(:disabled) {
+  background: var(--auth-green-hover);
+}
+.primary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.secondary {
+  height: 44px;
+  border-radius: 30px;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-card);
+  color: var(--auth-ink);
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.secondary:hover:not(:disabled) {
+  border-color: var(--auth-teal);
+  color: var(--auth-teal);
+}
+.note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--auth-muted);
+  padding: 10px 14px;
+  border-radius: 30px;
+  background: var(--auth-field);
+  border: 1px solid var(--auth-line);
+}
+
+/* ---------- Role chooser ---------- */
+.roles {
+  display: grid;
+  gap: 12px;
+}
+.role {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-card);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 3px 4px #2e262608;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.role:hover {
+  border-color: var(--role-tone);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+  transform: translateY(-2px);
+}
+.roleTraveller {
+  --role-tone: var(--auth-teal);
+  --role-soft: #e6f7f5;
+}
+.roleProvider {
+  --role-tone: var(--auth-gold);
+  --role-soft: #fbf3e4;
+}
+.roleIcon {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--role-soft);
+  color: var(--role-tone);
+}
+.role h3 {
+  margin: 1px 0 3px;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.role p {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--auth-muted);
+}
+.role strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--role-tone);
+}
+.badge {
+  padding: 1px 8px;
+  border-radius: 30px;
+  background: var(--role-soft);
+  color: var(--role-tone);
+  font-family: var(--font-plus-jakarta), sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* ---------- Phones and small tablets ---------- */
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+    background: #0b1f26;
+  }
+  .hero {
+    position: relative;
+    height: 210px;
+    padding: 18px 20px 40px;
+    justify-content: flex-end;
+  }
+  .hero .brand,
+  .heroCopy p,
+  .chips,
+  .trust {
+    display: none;
+  }
+  .heroCopy h2 {
+    font-size: 22px;
+    max-width: none;
+  }
+  .panel {
+    position: relative;
+    margin-top: -22px;
+    min-height: auto;
+    border-radius: 22px 22px 0 0;
+    background: var(--auth-card);
+    padding: 14px 20px 32px;
+  }
+  .mobileBrand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-outfit), sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--auth-teal);
+    text-decoration: none;
+  }
+  .body {
+    margin: 0 auto;
+    padding: 18px 0 0;
+  }
+  .title {
+    font-size: 22px;
+  }
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Provider service choice ---------- */
+.services {
+  display: grid;
+  gap: 10px;
+}
+.service {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-card);
+  text-align: left;
+  color: var(--auth-ink);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.service:hover {
+  border-color: var(--auth-line-hover);
+}
+.serviceSelected,
+.serviceSelected:hover {
+  border-color: var(--auth-teal);
+  background: #f3fbfa;
+}
+.serviceIcon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--auth-field);
+  color: var(--auth-teal);
+}
+.serviceSelected .serviceIcon {
+  background: #e0f5f2;
+}
+.serviceText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.serviceText strong {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.serviceText span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--auth-muted);
+}
+.serviceCheck {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--auth-line-hover);
+  color: #fff;
+}
+.serviceSelected .serviceCheck {
+  border-color: var(--auth-teal);
+  background: var(--auth-teal);
+}
+
+/* ---------- Custom left side (map on the location step) ---------- */
+.asideCustom {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+.hero[hidden] {
+  display: none;
+}
+@media (max-width: 900px) {
+  .asideCustom {
+    position: relative;
+    height: 46dvh;
+    min-height: 280px;
+  }
+}
+/* The photo layer sits behind the hero text (overrides `.hero > *`). */
+.hero > .heroImage {
+  position: absolute;
+  z-index: 0;
+}
+.bodyWide {
+  max-width: 560px;
+}
+.bannerInfo {
+  background: #f0f7ff;
+  border-color: #c9defa;
+  color: #1d4f91;
+}

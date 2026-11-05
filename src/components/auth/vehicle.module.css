@@ -1,0 +1,456 @@
+/* Driver step 5: sections, choice chips, photos and routes. Same tokens as auth.module.css. */
+.section {
+  display: grid;
+  gap: 14px;
+  padding-top: 22px;
+  margin-top: 6px;
+  border-top: 1px solid #dfe6ef;
+}
+.section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sectionNumber {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0f5f2;
+  color: #0f9b98;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sectionHead h2 {
+  margin: 0;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #242323;
+}
+.sectionHead p {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: #617185;
+}
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Choice chips (vehicle type, insurance yes/no, pricing) */
+.choiceLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b6a7d;
+  padding-left: 4px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.chip:hover {
+  border-color: #cbd3de;
+}
+.chipOn,
+.chipOn:hover {
+  border-color: #0f9b98;
+  background: #f3fbfa;
+  color: #0b7f7c;
+}
+.options {
+  display: grid;
+  gap: 8px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  color: #242323;
+}
+.option:hover {
+  border-color: #cbd3de;
+}
+.optionOn,
+.optionOn:hover {
+  border-color: #0f9b98;
+  background: #f3fbfa;
+}
+.option strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.option span {
+  display: block;
+  font-size: 12px;
+  color: #617185;
+}
+.radio {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid #cbd3de;
+  background: #fff;
+}
+.optionOn .radio {
+  border: 5px solid #0f9b98;
+}
+.fieldError {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #ba3b24;
+  padding-left: 4px;
+}
+
+/* Select styled like the pill inputs */
+.select {
+  width: 100%;
+  height: 48px;
+  padding: 0 40px 0 16px;
+  border-radius: 36px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2367788e' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 16px center;
+  appearance: none;
+  color: #242323;
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: none;
+}
+.select:hover {
+  border-color: #cbd3de;
+}
+.select:focus {
+  background-color: #fff;
+}
+.selectError {
+  border-color: #e7a99b;
+}
+
+/* Photos */
+.photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.photo {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.photoLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b6a7d;
+  padding-left: 4px;
+}
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.dropzone {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px dashed #cbd3de;
+  background: #f4f6f9;
+  color: #0f9b98;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+.dropzone:hover:not(:disabled) {
+  border-color: #0f9b98;
+  background: #f3fbfa;
+}
+.dropzone small {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: #617185;
+}
+.dropzoneError {
+  border-color: #e7a99b;
+}
+.preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #dfe6ef;
+}
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.previewActions {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+.previewActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 30px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.92);
+  color: #242323;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.previewActions button:hover {
+  color: #0f9b98;
+}
+.photoError {
+  font-size: 11px;
+  font-weight: 500;
+  color: #ba3b24;
+  padding-left: 4px;
+}
+
+/* Routes */
+.routes {
+  display: grid;
+  gap: 8px;
+}
+.route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.routeArrow {
+  color: #67788e;
+}
+.routeInput {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 36px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9;
+  color: #242323;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+}
+.routeInput:hover {
+  border-color: #cbd3de;
+}
+.routeInput:focus {
+  background: #fff;
+}
+.iconButton {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 0;
+  background: none;
+  color: #67788e;
+  cursor: pointer;
+}
+.iconButton:hover {
+  background: #fdf2f0;
+  color: #ba3b24;
+}
+.addRoute {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 30px;
+  border: 1px dashed #cbd3de;
+  background: none;
+  color: #0f9b98;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.addRoute:hover {
+  border-color: #0f9b98;
+}
+.draftNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #617185;
+}
+
+@media (max-width: 900px) {
+  .row3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .photos {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .row3,
+  .photos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Step 6: summary of the registered vehicle */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 12px 16px;
+  border-radius: 20px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9;
+}
+.summaryIcon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0f5f2;
+  color: #0f9b98;
+}
+.summaryText {
+  flex: 1;
+  min-width: 0;
+}
+.summaryText small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  color: #5b6a7d;
+}
+.summaryText strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #242323;
+}
+.summaryText span {
+  display: block;
+  font-size: 11.5px;
+  color: #617185;
+}
+.summaryEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.summaryEdit:hover {
+  color: #0f9b98;
+  border-color: #cbd3de;
+}
+
+/* Seat counter */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 4px;
+  border-radius: 36px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9;
+}
+.stepper button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+}
+.stepper button:hover:not(:disabled) {
+  color: #0f9b98;
+  border-color: #cbd3de;
+}
+.stepper button:disabled {
+  opacity: 0.45;
+}
+.stepperValue {
+  width: 56px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #242323;
+  outline: none;
+}
+.stepperValue::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}

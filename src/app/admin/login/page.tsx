@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Compass, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Compass, Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/components/error-state";
@@ -17,16 +17,20 @@ const loginSchema = z.object({
     .string()
     .min(1, "Email is required")
     .email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { user, loading, login } = useAuth();
+  const { user, loading, login, verifyCode } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  /** Set once the password was right and a 2-step code is needed. */
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
 
   const {
     register,
@@ -39,22 +43,48 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (!loading && user?.role === "admin") {
-      router.replace("/admin/dashboard");
+      router.replace(user.twoFactorSetupRequired ? "/admin/security" : "/admin/dashboard");
     }
   }, [loading, user, router]);
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const authenticated = await login(values.email, values.password);
-      toast.success(`Welcome back, ${authenticated.name || "Administrator"}.`);
-      router.replace("/admin/dashboard");
+      const result = await login(values.email, values.password);
+      if (result.kind === "code-required") {
+        setMfaToken(result.mfaToken);
+        return;
+      }
+      toast.success(`Welcome back, ${result.user.name || "Administrator"}.`);
+      router.replace(result.user.twoFactorSetupRequired ? "/admin/security" : "/admin/dashboard");
     } catch (error) {
       const message = errorMessage(error, "Unable to sign in. Please try again.");
       setFormError(message);
       toast.error(message);
     }
   });
+
+  const onSubmitCode = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!mfaToken) return;
+    setFormError(null);
+    setVerifying(true);
+    try {
+      const authenticated = await verifyCode(mfaToken, code);
+      toast.success(`Welcome back, ${authenticated.name || "Administrator"}.`);
+      router.replace("/admin/dashboard");
+    } catch (error) {
+      const message = errorMessage(error, "That code did not work. Please try again.");
+      setFormError(message);
+      // The step token lasts 5 minutes; after that, start again from the password.
+      if (/took too long|password again/i.test(message)) {
+        setMfaToken(null);
+        setCode("");
+      }
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-1 flex-col lg:flex-row">
@@ -104,6 +134,67 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            {mfaToken ? (
+              <>
+                <div className="space-y-1.5">
+                  <h1 className="text-2xl font-semibold tracking-tight text-navy">
+                    2-step verification
+                  </h1>
+                  <p className="text-sm text-muted">
+                    Enter the 6-digit code from your authenticator app. Lost your phone? Use one
+                    of your recovery codes instead.
+                  </p>
+                </div>
+                <form className="mt-6 space-y-4" onSubmit={onSubmitCode} noValidate>
+                  <div className="space-y-1.5">
+                    <label htmlFor="code" className="text-sm font-medium text-navy">
+                      Code
+                    </label>
+                    <Input
+                      key="mfa-code"
+                      id="code"
+                      inputMode="text"
+                      autoComplete="one-time-code"
+                      autoFocus
+                      placeholder="123 456"
+                      maxLength={12}
+                      leftIcon={<KeyRound className="h-4 w-4" aria-hidden />}
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                    />
+                  </div>
+                  {formError ? (
+                    <div
+                      role="alert"
+                      className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger"
+                    >
+                      {formError}
+                    </div>
+                  ) : null}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    size="lg"
+                    loading={verifying}
+                    disabled={code.trim().length < 6}
+                  >
+                    {verifying ? "Checking…" : "Verify and sign in"}
+                  </Button>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-center gap-1.5 text-sm text-muted hover:text-foreground"
+                    onClick={() => {
+                      setMfaToken(null);
+                      setCode("");
+                      setFormError(null);
+                    }}
+                  >
+                    <ArrowLeft className="h-4 w-4" aria-hidden /> Use a different account
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
             <div className="space-y-1.5">
               <h1 className="text-2xl font-semibold tracking-tight text-navy">Sign in</h1>
               <p className="text-sm text-muted">
@@ -172,6 +263,8 @@ export default function AdminLoginPage() {
                 {isSubmitting ? "Signing in…" : "Sign in"}
               </Button>
             </form>
+              </>
+            )}
           </div>
 
           <p className="mt-6 text-center text-xs text-muted">

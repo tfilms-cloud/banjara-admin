@@ -1,0 +1,195 @@
+/* Leaflet canvas + pins. Brand colours match the rest of the site. */
+.canvas {
+  --pin-teal: #0f9b98;
+  --pin-coral: #ff6b6b;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  background: #ccfbf1;
+  border-radius: inherit;
+  overflow: hidden;
+  isolation: isolate;
+}
+.canvas :global(.leaflet-container) {
+  width: 100%;
+  height: 100%;
+  background: #ccfbf1;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.canvas :global(.leaflet-control-zoom) {
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px #163c3433;
+}
+.canvas :global(.leaflet-control-zoom a) {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  color: #0f9b98;
+  font-size: 20px;
+}
+.canvas :global(.leaflet-control-attribution) {
+  font-size: 10px;
+  background: #ffffffd9;
+  border-radius: 8px 0 0 0;
+}
+
+/* The wrapper has no size; the pin is positioned around the anchor point (its tail tip). */
+.pinWrap {
+  background: none;
+  border: 0;
+  overflow: visible;
+}
+
+/* Avatar pin: the listing's photo in a ring, a small detail tag, and a tail on the exact spot. */
+.avatarPin {
+  --size: 46px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 4px 8px #0f1e1c40);
+}
+.face {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  overflow: hidden;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  outline: 2px solid var(--pin-teal);
+  background: #ccfbf1;
+  color: var(--pin-teal);
+  font: 700 17px/1 var(--font-outfit, system-ui), system-ui, sans-serif;
+  transition:
+    outline-color 0.15s,
+    transform 0.15s;
+}
+/* Leaflet forces marker images to their natural size (width:auto, max-width:none); undo that. */
+.face img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  object-fit: cover;
+  display: block;
+}
+.tag {
+  position: relative;
+  z-index: 2;
+  margin-top: -9px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--pin-teal);
+  color: #fff;
+  border: 2px solid #fff;
+  font: 700 11px/1.15 var(--font-outfit, system-ui), system-ui, sans-serif;
+  white-space: nowrap;
+}
+.tail {
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--pin-teal);
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg);
+}
+.pinName {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 11px;
+  border-radius: 10px;
+  background: #1c2c2a;
+  color: #fff;
+  font: 600 12px/1.2 system-ui, sans-serif;
+  pointer-events: none;
+}
+.hover {
+  transform: translateX(-50%) scale(1.08);
+}
+.hover .face {
+  outline-color: #0f9b98;
+}
+.selected {
+  --size: 58px;
+  z-index: 10;
+  transform: translateX(-50%) scale(1.04);
+}
+.selected .face {
+  outline: 3px solid var(--pin-coral);
+}
+.selected .tag,
+.selected .tail {
+  background: var(--pin-coral);
+}
+
+.cluster {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--pin-teal);
+  color: #fff;
+  border: 3px solid #ffffffcc;
+  font: 700 14px/1 var(--font-outfit, system-ui), system-ui, sans-serif;
+  box-shadow: 0 4px 14px #0f1e1c4d;
+  cursor: pointer;
+}
+.routeEnd {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #1c2c2a;
+  color: #fff;
+  font: 600 11px/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.pinWrap:focus-visible .face {
+  outline: 3px solid #0f9b98;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarPin,
+  .face {
+    transition: none;
+  }
+}
+
+/* Smaller pins on the little preview map. */
+.compact .avatarPin {
+  --size: 36px;
+}
+.compact .tag {
+  font-size: 10px;
+  padding: 2px 7px;
+}

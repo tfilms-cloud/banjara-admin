@@ -1,10 +1,11 @@
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import type { ApiSuccess, AuthTokens } from "@/types/auth";
+import { createTokenSession, scopeHeaders } from "@/lib/token-session";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
-const ACCESS_KEY = "bangara_admin_access";
-const REFRESH_KEY = "bangara_admin_refresh";
-const USER_KEY = "bangara_admin_user";
+
+/** Admin portal session: access token in memory, refresh token in an httpOnly cookie. */
+export const adminSession = createTokenSession("admin");
 
 export class ApiError extends Error {
   status?: number;
@@ -18,78 +19,39 @@ export class ApiError extends Error {
   }
 }
 
-export function getStoredAccessToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_KEY);
+export function getAdminAccessToken() {
+  return adminSession.getAccessToken();
 }
 
-export function getStoredRefreshToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY);
-}
-
-export function getStoredUser<T>() {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(USER_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-export function persistSession(user: unknown, tokens: AuthTokens) {
-  localStorage.setItem(ACCESS_KEY, tokens.accessToken);
-  localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export function persistSession(tokens: AuthTokens) {
+  adminSession.setAccessToken(tokens.accessToken);
 }
 
 export function clearSession() {
-  localStorage.removeItem(ACCESS_KEY);
-  localStorage.removeItem(REFRESH_KEY);
-  localStorage.removeItem(USER_KEY);
+  adminSession.clear();
 }
 
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 20000,
+  // Lets the API set and read the refresh cookie (it is path-scoped to /api/auth).
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    ...scopeHeaders("admin"),
   },
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = getStoredAccessToken();
+  const token = adminSession.getAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-let refreshPromise: Promise<string | null> | null = null;
-
 async function refreshAccessToken() {
-  if (refreshPromise) return refreshPromise;
-  refreshPromise = (async () => {
-    const refreshToken = getStoredRefreshToken();
-    if (!refreshToken) return null;
-    try {
-      const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-      const data = response.data?.data;
-      const accessToken = data?.tokens?.accessToken as string | undefined;
-      const nextRefresh = data?.tokens?.refreshToken as string | undefined;
-      const user = data?.user;
-      if (!accessToken || !nextRefresh) return null;
-      persistSession(user ?? getStoredUser(), { accessToken, refreshToken: nextRefresh });
-      return accessToken;
-    } catch {
-      clearSession();
-      return null;
-    } finally {
-      refreshPromise = null;
-    }
-  })();
-  return refreshPromise;
+  const result = await adminSession.refresh();
+  return result.kind === "ok" ? result.accessToken : null;
 }
 
 function normalizeError(error: unknown): ApiError {
@@ -118,7 +80,9 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const status = error.response?.status;
     const original = error.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined;
-    if (status === 401 && original && !original._retry) {
+    // A 401 from sign-in/logout itself is not an expired session.
+    const isAuthCall = /^\/?auth\/(login|logout|forgot-password|reset-password)/.test(String(original?.url ?? ""));
+    if (status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
       const accessToken = await refreshAccessToken();
       if (accessToken) {

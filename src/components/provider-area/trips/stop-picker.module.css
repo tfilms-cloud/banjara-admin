@@ -1,0 +1,353 @@
+/* Pickup / drop-off picker with a map dialog. */
+.field {
+  display: grid;
+  gap: 8px;
+}
+.label {
+  padding-left: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #5b6a7d;
+}
+.stops {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.stops li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+}
+.stopIcon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6f7f5;
+  color: #0f9b98;
+}
+.dropIcon {
+  background: #fff4e5;
+  color: #c4660b;
+}
+.stopText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.stopText strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.stopText small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: #617185;
+}
+.remove {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #67788e;
+}
+.remove:hover {
+  color: #ba3b24;
+  border-color: #f3cdc4;
+}
+.open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 36px;
+  border: 1px dashed #b7c3d1;
+  background: #f4f6f9;
+  color: #4a5868;
+  font-size: 13.5px;
+  text-align: left;
+}
+.open span {
+  flex: 1;
+}
+.open svg:first-child {
+  color: #0f9b98;
+}
+.open:hover {
+  border-color: #0f9b98;
+  background: #f1fbf9;
+  color: #0b7f7c;
+}
+.plus {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  border-radius: 50%;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #0f9b98;
+  box-sizing: border-box;
+}
+.suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+}
+.suggest small {
+  font-size: 11.5px;
+  color: #8592a3;
+}
+.suggest button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #4a5868;
+  font-size: 12px;
+}
+.suggest button:hover {
+  border-color: #0f9b98;
+  color: #0b7f7c;
+}
+
+/* ---------- Dialog ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.dialog {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.3);
+  overflow: hidden;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 10px;
+}
+.head div {
+  flex: 1;
+}
+.head h3 {
+  margin: 0;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+.head p {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #617185;
+}
+.close {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #4a5868;
+}
+.searchRow {
+  position: relative;
+  z-index: 700;
+  padding: 0 20px 10px;
+}
+.mapBox {
+  position: relative;
+  height: 340px;
+  flex: none;
+  margin: 0 20px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #dfe6ef;
+}
+.mapBox > div:first-child {
+  height: 100%;
+}
+.mapLoading {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: #e8edf3;
+  color: #617185;
+  font-size: 13px;
+}
+.locate {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+.locate:hover {
+  color: #0f9b98;
+}
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 600;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 30px;
+  background: rgba(36, 35, 35, 0.82);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.details {
+  display: grid;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  overflow-y: auto;
+}
+.nameField {
+  display: grid;
+  gap: 5px;
+}
+.nameField span {
+  padding-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b6a7d;
+}
+.nameField input {
+  height: 46px;
+  padding: 0 16px;
+  border-radius: 36px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9;
+  color: #242323;
+  font-size: 13.5px;
+  font-weight: 500;
+  outline: none;
+}
+.nameField input:focus {
+  background: #fff;
+  border-color: #cbd3de;
+}
+.address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding-left: 4px;
+  font-size: 12.5px;
+  color: #617185;
+}
+.address svg {
+  flex: none;
+  color: #0f9b98;
+}
+.error {
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: #fdf2f0;
+  color: #ba3b24;
+  font-size: 12.5px;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.primary,
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.primary {
+  border: 0;
+  background: #16b364;
+  color: #fff;
+}
+.primary:hover:not(:disabled) {
+  background: #129a56;
+}
+.ghost {
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+}
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .backdrop {
+    padding: 0;
+    place-items: end stretch;
+  }
+  .dialog {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 22px 22px 0 0;
+  }
+  .mapBox {
+    height: 280px;
+    margin: 0 14px;
+  }
+  .head,
+  .searchRow,
+  .details {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}

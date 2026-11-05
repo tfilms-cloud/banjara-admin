@@ -14,7 +14,9 @@ import {
   MapPin,
   MessageSquare,
   Route,
+  ScrollText,
   Settings,
+  ShieldCheck,
   Star,
   Ticket,
   Users,
@@ -89,6 +91,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Support", href: "/admin/support", icon: LifeBuoy },
       { label: "Reports", href: "/admin/reports", icon: ChartColumn },
+      { label: "Audit log", href: "/admin/audit-log", icon: ScrollText },
+      { label: "Security", href: "/admin/security", icon: ShieldCheck },
       { label: "Settings", href: "/admin/settings", icon: Settings },
     ],
   },

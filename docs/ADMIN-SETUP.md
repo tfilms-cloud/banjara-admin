@@ -1,4 +1,15 @@
-# Bangara Admin — Setup
+# Bangara Admin — Historical Setup
+
+> The legacy admin website was removed during the Figma-only cleanup. This document is retained as history. See [the current website scope](WEBSITE_FIGMA_SCOPE.md) for active routes and validation.
+
+The Next.js app now hosts **two surfaces**:
+
+| Route | Audience |
+|-------|----------|
+| `/` | BANJARA customer website (traveller search, booking, account) |
+| `/admin` | Operations console (unchanged) |
+
+Customer and admin auth use **separate** localStorage keys so sessions never overwrite each other.
 
 The operations console for the Bangara travel platform, built with Next.js 16
 (App Router), React 19, Tailwind CSS v4 and TanStack Query.

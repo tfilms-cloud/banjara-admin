@@ -51,7 +51,9 @@ export function ProviderActions({ provider, size = "sm", className }: ProviderAc
   const dialogCopy: Record<ActionKind, { title: string; description: string; confirm: string }> = {
     approve: {
       title: "Approve this provider?",
-      description: `${provider.businessName || "This provider"} will go live and can start accepting bookings.`,
+      description: (provider.services ?? []).includes("transport")
+        ? `${provider.businessName || "This driver"} will go live, and the vehicle they registered is approved too, so they can publish rides and accept bookings straight away.`
+        : `${provider.businessName || "This provider"} will go live and can start accepting bookings.`,
       confirm: "Approve provider",
     },
     reject: {

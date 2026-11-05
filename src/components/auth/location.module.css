@@ -1,0 +1,223 @@
+/* Driver location step: map with a centre pin, plus the address panel. */
+.mapWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  background: #e8edf3;
+}
+.map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.map :global(.leaflet-control-attribution) {
+  font-size: 10px;
+}
+
+/* Pin: a teal drop whose tip marks the map centre. */
+.pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 500;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  display: grid;
+  justify-items: center;
+}
+.pinHead {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  background: #0f9b98;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3);
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+  position: relative;
+}
+.pinHead::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: #fff;
+}
+.pinShadow {
+  width: 14px;
+  height: 5px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.28);
+}
+.moving .pinHead {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Map floating controls */
+.mapTools {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 600;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+.mapTools > * {
+  pointer-events: auto;
+}
+.mapButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+  text-decoration: none;
+  cursor: pointer;
+}
+.mapButton:hover:not(:disabled) {
+  color: #0f9b98;
+  border-color: #cbd3de;
+}
+.mapButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.mapHint {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 600;
+  transform: translateX(-50%);
+  padding: 7px 14px;
+  border-radius: 30px;
+  background: rgba(36, 35, 35, 0.82);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Search */
+.search {
+  position: relative;
+}
+.results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 18px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.result {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 12px;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: #242323;
+}
+.result:hover,
+.resultActive {
+  background: #f4f6f9;
+}
+.result svg {
+  flex: none;
+  margin-top: 2px;
+  color: #0f9b98;
+}
+.result strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.result span {
+  display: block;
+  font-size: 11.5px;
+  color: #617185;
+  line-height: 1.45;
+}
+.resultEmpty {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: #617185;
+}
+
+/* Address card under the search */
+.addressCard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 20px;
+  border: 1px solid #dfe6ef;
+  background: #f4f6f9;
+}
+.addressIcon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0f5f2;
+  color: #0f9b98;
+}
+.addressText {
+  min-width: 0;
+}
+.addressText small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  color: #5b6a7d;
+}
+.addressText strong {
+  display: block;
+  margin-top: 1px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #242323;
+}
+.addressText span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #617185;
+}
+
+@media (max-width: 900px) {
+  .mapWrap {
+    min-height: 0;
+  }
+  .mapHint {
+    bottom: 34px;
+  }
+}

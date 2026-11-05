@@ -16,7 +16,7 @@ import { filterByPaths, firstNumber, firstText, refLabel } from "@/lib/records";
 import { idOf } from "@/lib/utils";
 
 type StatusTab = "all" | "pending" | "active" | "rejected" | "suspended";
-type TypeTab = "all" | "car" | "van" | "bus" | "coaster" | "suv" | "other";
+type TypeTab = "all" | "car" | "jeep" | "van" | "bus" | "coaster" | "suv" | "other";
 type SeatTab = "all" | "1-7" | "8-18" | "19-30" | "31+";
 
 const STATUS_TABS: FilterTab<StatusTab>[] = [
@@ -30,6 +30,7 @@ const STATUS_TABS: FilterTab<StatusTab>[] = [
 const TYPE_TABS: FilterTab<TypeTab>[] = [
   { value: "all", label: "All types" },
   { value: "car", label: "Car" },
+  { value: "jeep", label: "Jeep" },
   { value: "van", label: "Van" },
   { value: "bus", label: "Bus" },
   { value: "coaster", label: "Coaster" },

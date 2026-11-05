@@ -3,14 +3,16 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
-import { getStoredAccessToken } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AdminEntryPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    router.replace(getStoredAccessToken() ? "/admin/dashboard" : "/admin/login");
-  }, [router]);
+    if (loading) return;
+    router.replace(user ? "/admin/dashboard" : "/admin/login");
+  }, [loading, user, router]);
 
   return (
     <div className="flex flex-1 items-center justify-center bg-background">

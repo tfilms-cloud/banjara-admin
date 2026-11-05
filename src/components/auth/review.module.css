@@ -1,0 +1,134 @@
+/* Driver step 8: review cards. Same tokens as the other steps. */
+.card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  box-shadow: 0 3px 4px #2e262608;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cardIcon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0f5f2;
+  color: #0f9b98;
+}
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+.cardTitle small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  color: #5b6a7d;
+}
+.cardTitle h2 {
+  margin: 0;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #242323;
+}
+.edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 30px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  color: #242323;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.edit:hover {
+  color: #0f9b98;
+  border-color: #cbd3de;
+}
+.rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 14px 0 0;
+}
+.rows:empty {
+  display: none;
+}
+.rows dt {
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+  color: #5b6a7d;
+}
+.rows dd {
+  margin: 1px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #242323;
+  overflow-wrap: anywhere;
+}
+.rowWide {
+  grid-column: 1 / -1;
+}
+.missing {
+  font-weight: 400;
+  color: #ba3b24;
+}
+.thumbs {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+.thumbs img {
+  width: 84px;
+  height: 63px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #dfe6ef;
+}
+.statusOk,
+.statusWait {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.statusOk {
+  color: #067647;
+  font-weight: 600;
+}
+.statusWait {
+  color: #a15c07;
+}
+.statusOk svg,
+.statusWait svg {
+  flex: none;
+  margin-top: 2px;
+}
+.submit {
+  display: grid;
+  gap: 12px;
+  padding-top: 6px;
+}
+@media (max-width: 420px) {
+  .rows {
+    grid-template-columns: 1fr;
+  }
+}

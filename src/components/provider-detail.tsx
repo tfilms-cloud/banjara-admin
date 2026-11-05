@@ -23,6 +23,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProvider } from "@/hooks/useProvider";
+import { providerServiceLabels } from "@/lib/provider-labels";
 import { refLabel } from "@/lib/records";
 import { formatDateTime } from "@/lib/utils";
 
@@ -128,7 +129,7 @@ export function ProviderDetail({ id, backHref, backLabel }: ProviderDetailProps)
     );
   }
 
-  const services = provider.providerType ?? provider.services ?? [];
+  const services = providerServiceLabels(provider);
   const account = provider.userId;
 
   return (
@@ -154,7 +155,7 @@ export function ProviderDetail({ id, backHref, backLabel }: ProviderDetailProps)
         {services.map((service) => (
           <span
             key={service}
-            className="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs capitalize text-muted"
+            className="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted"
           >
             {service}
           </span>

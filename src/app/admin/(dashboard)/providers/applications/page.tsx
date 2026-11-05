@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useProviders } from "@/hooks/useProviders";
+import { providerServiceLabels } from "@/lib/provider-labels";
 import { filterByPaths } from "@/lib/records";
 import { formatDate, idOf } from "@/lib/utils";
 import type { ProviderProfile } from "@/types/admin";
@@ -92,9 +93,9 @@ export default function ProviderApplicationsPage() {
       header: "Services",
       secondary: true,
       render: (provider) => {
-        const types = provider.providerType ?? provider.services ?? [];
+        const types = providerServiceLabels(provider);
         return types.length ? (
-          <span className="text-xs capitalize text-muted">{types.join(", ")}</span>
+          <span className="text-xs text-muted">{types.join(", ")}</span>
         ) : (
           "—"
         );

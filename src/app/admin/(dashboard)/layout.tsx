@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Compass, LoaderCircle } from "lucide-react";
 import { AdminHeader } from "@/components/layout/admin-header";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { useAuth } from "@/hooks/useAuth";
-import { getStoredAccessToken } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -15,16 +14,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  const pathname = usePathname();
   const authorized = Boolean(user && user.role === "admin");
+  // The API refuses admin requests until 2-step verification is on (when required),
+  // so go straight to the page that sets it up.
+  const mustSetUpTwoFactor = Boolean(user?.twoFactorSetupRequired) && pathname !== "/admin/security";
 
   useEffect(() => {
     if (loading) return;
-    if (!authorized || !getStoredAccessToken()) {
+    if (!authorized) {
       router.replace("/admin/login");
+    } else if (mustSetUpTwoFactor) {
+      router.replace("/admin/security");
     }
-  }, [loading, authorized, router]);
+  }, [loading, authorized, mustSetUpTwoFactor, router]);
 
-  if (loading || !authorized) {
+  if (loading || !authorized || mustSetUpTwoFactor) {
     return (
       <div className="flex min-h-screen flex-1 flex-col items-center justify-center gap-4 bg-navy text-white">
         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber text-navy">

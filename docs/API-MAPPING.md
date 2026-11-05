@@ -1,4 +1,6 @@
-# Bangara Admin — API Mapping
+# Bangara Admin — Historical API Mapping
+
+> The legacy admin website and its frontend service layer were removed. The backend APIs remain available to other applications. See [the current website scope](WEBSITE_FIGMA_SCOPE.md) and individual website UI guides for active frontend behavior.
 
 Every screen in the admin portal reads from the Bangara backend at
 `NEXT_PUBLIC_API_URL` (default `http://localhost:5000/api`). No screen renders

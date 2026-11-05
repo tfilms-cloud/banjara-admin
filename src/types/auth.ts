@@ -1,5 +1,8 @@
 export type UserRole = "customer" | "provider" | "admin";
 
+/** Review state of a service provider's application. */
+export type ProviderAccountStatus = "pending" | "approved" | "rejected" | "suspended";
+
 export type AuthUser = {
   id: string;
   name: string;
@@ -9,11 +12,19 @@ export type AuthUser = {
   status?: string;
   avatar?: string;
   createdAt?: string;
+  /** Present for providers once their application has started. */
+  providerId?: string;
+  providerStatus?: ProviderAccountStatus;
+  /** Admins only. */
+  twoFactorEnabled?: boolean;
+  /** Admins only: the API will refuse admin requests until 2-step verification is on. */
+  twoFactorSetupRequired?: boolean;
 };
 
 export type AuthTokens = {
   accessToken: string;
-  refreshToken: string;
+  /** Absent for the website: the API keeps it in an httpOnly cookie. */
+  refreshToken?: string;
 };
 
 export type AuthResponse = {

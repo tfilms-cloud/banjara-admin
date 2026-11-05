@@ -1,0 +1,193 @@
+/* Driver step 7: CNIC verification (preview). Same tokens as the other steps. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+/* ID cards are 85.6 × 54 mm. */
+.card {
+  aspect-ratio: 85.6 / 54;
+}
+.cardOutline {
+  position: relative;
+  width: 64px;
+  height: 40px;
+  border-radius: 6px;
+  border: 1.5px solid #9fb3c8;
+  margin-bottom: 4px;
+}
+.cardFace {
+  position: absolute;
+  right: 6px;
+  top: 7px;
+  width: 16px;
+  height: 20px;
+  border-radius: 3px;
+  background: #cbd8e5;
+}
+.cardStripe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 7px;
+  background: #cbd8e5;
+}
+.tips {
+  margin: 0;
+  padding: 10px 16px 10px 32px;
+  border-radius: 16px;
+  background: #f4f6f9;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #617185;
+  list-style: disc;
+}
+
+/* Result card */
+.result {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #dfe6ef;
+  background: #fff;
+  box-shadow: 0 3px 4px #2e262608;
+}
+.resultHead {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.resultIcon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(245, 184, 61, 0.18);
+  color: #a15c07;
+}
+.resultBadge {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 30px;
+  background: rgba(245, 184, 61, 0.18);
+  color: #a15c07;
+  font-size: 11px;
+  font-weight: 500;
+}
+.resultHead h2 {
+  margin: 4px 0 2px;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: #242323;
+}
+.resultHead p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #617185;
+}
+.rows {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #f4f6f9;
+  border: 1px solid #dfe6ef;
+}
+.rows small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  color: #5b6a7d;
+}
+.rows strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #242323;
+  overflow-wrap: anywhere;
+}
+.rows em {
+  flex: none;
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #a15c07;
+}
+.editLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0f9b98;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.editLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+.skip {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f9b98;
+  text-decoration: none;
+}
+.skip:hover {
+  text-decoration: underline;
+}
+
+/* Real result states */
+.resultOk {
+  border-color: #b7ece2;
+}
+.resultBad {
+  border-color: #f3cdc4;
+}
+.iconOk,
+.badgeOk {
+  background: rgba(22, 179, 100, 0.14);
+  color: #067647;
+}
+.iconBad,
+.badgeBad {
+  background: #fdf2f0;
+  color: #ba3b24;
+}
+.rows em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.rows .matched {
+  color: #067647;
+}
+.rows .notMatched {
+  color: #ba3b24;
+}

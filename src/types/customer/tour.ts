@@ -1,0 +1,46 @@
+export type TourDay = { dayNumber: number; title: string; description: string };
+export type TourOperator = {
+  id: string;
+  userId: string;
+  name: string;
+  logo: string;
+  description: string;
+  city: string;
+  phone: string;
+  email: string;
+  verified: boolean;
+  rating: number;
+  reviewCount: number;
+  yearsExperience: number;
+};
+export type TourItinerary = {
+  id: string;
+  providerId: string;
+  title: string;
+  tourType: string;
+  summary: string;
+  description: string;
+  destination: string;
+  region: string;
+  durationDays: number;
+  durationNights?: number;
+  difficulty: string;
+  maxParticipants: number;
+  pricePerPerson: number;
+  currency: string;
+  included: string[];
+  excluded: string[];
+  days: TourDay[];
+  coverImage: string;
+  images: string[];
+  departureLocation: string;
+  bestSeason: string;
+  status: string;
+};
+export type TourPlan = { startDate: string; travelers: number };
+export type TourGuest = {
+  name: string;
+  email: string;
+  phone: string;
+  specialRequests?: string;
+};

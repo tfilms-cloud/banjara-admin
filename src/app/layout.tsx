@@ -21,11 +21,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BANJARA Admin",
-  description: "Operations console for the BANJARA travel platform.",
+  title: {
+    default: "BANJARA",
+    template: "%s · BANJARA",
+  },
+  description:
+    "Book vans, buses, private trips, and stays across northern Pakistan.",
+  icons: {
+    icon: "/banjara-logo.png",
+    apple: "/banjara-logo.png",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
