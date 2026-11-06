@@ -6,8 +6,8 @@ import {
   ArrowRight,
   BadgeCheck,
   BusFront,
-  ChevronRight,
-  Route,
+  CarFront,
+  MapPin,
   Star,
 } from "lucide-react";
 import { groupTransportAgencies } from "@/lib/agency-discovery";
@@ -19,16 +19,25 @@ function AgencyLogo({ name, src }: { name: string; src: string }) {
   const [failed, setFailed] = useState("");
   return src && failed !== src ? (
     <img
+      className={styles.avatar}
       src={src}
-      alt={`${name} logo`}
+      alt={`${name} photo`}
       onError={() => setFailed(src)}
       loading="lazy"
     />
   ) : (
     <span className={styles.logo}>
-      <BusFront size={23} />
+      <BusFront size={24} />
     </span>
   );
+}
+
+/** "Gilgit → Gilgit" reads like a bug to customers; show it as a local route. */
+function routeLabel(route: string) {
+  const [from, to] = route.split(" → ");
+  return from && to && from.trim().toLowerCase() === to.trim().toLowerCase()
+    ? `Around ${from}`
+    : route;
 }
 
 /** Same grouped driver entry point as mobile Explore's Local drivers rail. */
@@ -50,86 +59,117 @@ export function TransporterCards({ trips }: { trips: TripWithDetails[] }) {
           </span>
         </div>
         <span className={styles.partners}>
+          {groups.every((g) => g.agency.verified) && (
+            <BadgeCheck size={13} aria-hidden />
+          )}
           {groups.every((g) => g.agency.verified)
             ? "Verified drivers"
             : "Drive with locals"}
         </span>
       </div>
       <div className={styles.grid}>
-        {groups.map((group) => (
-          <Link
-            key={group.agencyId}
-            href={`/agencies/${encodeURIComponent(group.agencyId)}`}
-            className={styles.card}
-            aria-label={`View driver ${group.agency.name}`}
-          >
-            <div className={styles.identity}>
-              <AgencyLogo name={group.agency.name} src={group.agency.logo} />
-              <div>
-                <h3>
-                  {group.agency.name}
-                  {group.agency.verified && (
-                    <BadgeCheck size={16} aria-label="Verified provider" />
-                  )}
-                </h3>
-                <p>
-                  {group.vehicleNames.slice(0, 2).join(" · ") ||
-                    "Transport partner"}
-                </p>
-              </div>
-              <ChevronRight size={17} />
-            </div>
-            <div className={styles.summary}>
-              <span className={styles.rating}>
-                {group.agency.rating > 0 ? (
-                  <>
-                    <Star size={12} fill="currentColor" />
-                    {group.agency.rating.toFixed(1)}
-                    {group.agency.reviewCount > 0
-                      ? ` (${group.agency.reviewCount})`
-                      : ""}
-                  </>
-                ) : (
-                  "New provider"
-                )}
-              </span>
-              <span className={styles.tripCount}>
-                {group.tripCount}{" "}
-                {group.tripCount === 1 ? "departure" : "departures"}
-              </span>
-            </div>
-            <div className={styles.routes}>
-              <Route size={15} />
-              <span>
-                {group.routes.slice(0, 2).join(" · ")}
-                {group.routes.length > 2
-                  ? ` +${group.routes.length - 2} more`
-                  : ""}
-              </span>
-            </div>
-            <div className={styles.details}>
-              <div className={styles.badges}>
-                {group.oneWayCount > 0 && (
-                  <span>{group.oneWayCount} one way</span>
-                )}
-                {group.roundTripCount > 0 && (
-                  <span>{group.roundTripCount} round trip</span>
-                )}
-              </div>
-              <div className={styles.fares}>
-                {group.fares.map((f) => (
-                  <div key={`${f.currency}-${f.unit}`}>
-                    <small>FROM · PER {f.unit.toUpperCase()}</small>
-                    <strong>{formatCurrency(f.amount, f.currency)}</strong>
+        {groups.map((group) => {
+          const routes = group.routes.map(routeLabel);
+          const tripTypes = [
+            group.oneWayCount > 0 && `${group.oneWayCount} one way`,
+            group.roundTripCount > 0 && `${group.roundTripCount} round trip`,
+          ].filter(Boolean);
+          const fares = [...group.fares].sort((a, b) =>
+            a.unit === b.unit ? 0 : a.unit === "seat" ? -1 : 1,
+          );
+          return (
+            <Link
+              key={group.agencyId}
+              href={`/agencies/${encodeURIComponent(group.agencyId)}`}
+              className={styles.card}
+              aria-label={`View driver ${group.agency.name}`}
+            >
+              <div className={styles.identity}>
+                <AgencyLogo name={group.agency.name} src={group.agency.logo} />
+                <div>
+                  <h3 title={group.agency.name}>
+                    <span>{group.agency.name}</span>
+                    {group.agency.verified && (
+                      <BadgeCheck size={16} aria-label="Verified driver" />
+                    )}
+                  </h3>
+                  <div className={styles.meta}>
+                    {group.agency.rating > 0 ? (
+                      <span className={styles.rating}>
+                        <Star size={12} fill="currentColor" />
+                        {group.agency.rating.toFixed(1)}
+                        {group.agency.reviewCount > 0 && (
+                          <em>({group.agency.reviewCount})</em>
+                        )}
+                      </span>
+                    ) : (
+                      <span className={styles.newBadge}>New</span>
+                    )}
+                    <span aria-hidden>·</span>
+                    <span>
+                      {group.tripCount}{" "}
+                      {group.tripCount === 1 ? "departure" : "departures"}
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-            <div className={styles.cta}>
-              View driver & all trips <ArrowRight size={15} />
-            </div>
-          </Link>
-        ))}
+
+              {group.vehicleNames.length > 0 && (
+                <div className={styles.vehicles}>
+                  {group.vehicleNames.slice(0, 2).map((v) => (
+                    <span key={v} title={v}>
+                      <CarFront size={13} aria-hidden />
+                      <span>{v}</span>
+                    </span>
+                  ))}
+                  {group.vehicleNames.length > 2 && (
+                    <span className={styles.more}>
+                      +{group.vehicleNames.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <ul className={styles.routes} aria-label="Routes">
+                {routes.slice(0, 2).map((r) => (
+                  <li key={r}>
+                    <MapPin size={14} aria-hidden />
+                    <span>{r}</span>
+                  </li>
+                ))}
+                {routes.length > 2 && (
+                  <li className={styles.moreRoutes}>
+                    +{routes.length - 2} more routes
+                  </li>
+                )}
+                {tripTypes.length > 0 && (
+                  <li className={styles.tripTypes}>{tripTypes.join(" · ")}</li>
+                )}
+              </ul>
+
+              <div className={styles.footer}>
+                <div
+                  className={styles.fares}
+                  data-count={Math.min(fares.length, 2)}
+                >
+                  {fares.slice(0, 2).map((f) => (
+                    <div key={`${f.currency}-${f.unit}`}>
+                      <small>
+                        {f.unit === "seat" ? "Per seat" : "Whole vehicle"}
+                      </small>
+                      <strong>
+                        <em>from</em> {formatCurrency(f.amount, f.currency)}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.cta}>
+                  View driver & trips <ArrowRight size={15} />
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

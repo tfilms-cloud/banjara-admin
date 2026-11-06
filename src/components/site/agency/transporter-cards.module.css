@@ -39,10 +39,12 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Size columns from the space the grid actually gets (the map pane narrows it). */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 20px;
 }
 .card {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -67,15 +69,16 @@
 .identity {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
 }
-.identity > img,
+.avatar,
 .logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #dee5ef;
 }
 .logo {
   display: grid;
@@ -91,122 +94,213 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.identity h3 > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .identity h3 svg {
   flex-shrink: 0;
   color: #0f9b98;
 }
-.identity p {
-  color: #617185;
-  font-size: 11px;
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-.identity > svg {
-  flex-shrink: 0;
-  color: #687f9e;
-}
-.summary {
+.meta {
   display: flex;
-  gap: 10px;
-  justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  flex-wrap: wrap;
+  white-space: nowrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #617185;
 }
 .rating {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: #617185;
+  gap: 3px;
+  color: #242323;
+  font-weight: 600;
 }
 .rating svg {
   color: #d79a33;
 }
-.tripCount {
-  padding: 3px 8px;
-  border-radius: 15px;
-  background: #e8edf4;
+.rating em {
+  font-style: normal;
+  font-weight: 400;
+  color: #617185;
+}
+.newBadge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #0f9b98;
+  background: #ccfbf1;
+  border-radius: 10px;
+  padding: 2px 7px;
+}
+.vehicles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vehicles > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 4px 9px;
+  border: 1px solid #dee5ef;
+  border-radius: 999px;
+  font-size: 11px;
   color: #475363;
 }
-.routes {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  background: #f0f3f7;
-  border-radius: 14px;
-  padding: 10px;
-  font-size: 11px;
-  color: #4c596a;
-}
-.routes svg {
-  color: #0f9b98;
+.vehicles > span svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  color: #687f9e;
 }
-.routes span {
-  overflow-wrap: anywhere;
+.vehicles > span > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.details {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  flex: 1;
+.vehicles > .more {
+  background: #f0f3f7;
+  border-color: transparent;
 }
-.badges {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-.badges span {
-  font-size: 10px;
-  border-radius: 12px;
-  background: #ccfbf1;
-  color: #0f9b98;
-  padding: 3px 8px;
-}
-.fares {
+.routes {
+  list-style: none;
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  text-align: right;
+  padding: 12px;
+  background: #f6f8fb;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #242323;
+}
+.routes li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.routes li svg {
+  color: #0f9b98;
   flex-shrink: 0;
 }
-.fares small {
-  font-size: 9px;
-  letter-spacing: 0.3px;
+.routes li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.moreRoutes {
+  padding-left: 21px;
+  font-size: 11px;
   color: #617185;
+}
+.tripTypes {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px dashed #dee5ef;
+  font-size: 11px;
+  color: #617185;
+}
+.footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fares {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid #edf0f4;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.fares[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.fares > div {
+  padding: 10px 12px;
+  min-width: 0;
+}
+.fares > div + div {
+  border-left: 1px solid #edf0f4;
+}
+.fares small {
   display: block;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #617185;
 }
 .fares strong {
+  display: block;
+  margin-top: 2px;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.fares strong em {
+  font-style: normal;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  color: #617185;
 }
 .cta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 1px solid #edf0ee;
-  padding-top: 13px;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #ecfdf9;
   color: #0f9b98;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  transition: background 0.15s, color 0.15s;
 }
-@media (max-width: 1050px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.card:hover .cta {
+  background: #0f9b98;
+  color: #fff;
+}
+.partners {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+/* Narrow cards: stack the two fares instead of clipping the prices. */
+@container (max-width: 340px) {
+  .fares > div {
+    padding: 9px 10px;
+  }
+  .fares strong {
+    font-size: 16px;
+  }
+}
+@container (max-width: 250px) {
+  .fares[data-count="2"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fares > div + div {
+    border-left: 0;
+    border-top: 1px solid #edf0f4;
   }
 }
 @media (max-width: 600px) {
   .grid {
-    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
   .heading {
