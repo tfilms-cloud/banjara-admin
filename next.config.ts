@@ -24,7 +24,8 @@ const csp = [
   "media-src 'self' blob: https:",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigins().join(" ")}`,
-  "frame-src https://www.google.com https://maps.google.com",
+  // OpenStreetMap: the map embeds on hotel and restaurant pages.
+  "frame-src https://www.google.com https://maps.google.com https://www.openstreetmap.org",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
