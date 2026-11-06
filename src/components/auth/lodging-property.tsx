@@ -75,8 +75,9 @@ function initialValues(p: LodgingProfile): Values {
     phone: s(d.phone, p.phone),
     landline: s(d.landline),
     email: s(d.email, p.email),
-    village: s(d.village),
-    district: s(d.district),
+    // Saved values first; otherwise what the map pin found.
+    village: s(d.village, p.pinned.area),
+    district: s(d.district, p.pinned.district),
     city: s(d.city, p.city),
     address: s(d.address, p.address),
     businessRegistrationNumber: s(d.businessRegistrationNumber),

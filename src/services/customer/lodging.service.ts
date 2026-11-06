@@ -91,12 +91,23 @@ export type LodgingProfile = {
   address: string;
   yearsExperience: number;
   location: { latitude: number; longitude: number } | null;
+  /** From the map pin (step 4), to pre-fill the property's village and district. */
+  pinned: { area: string; district: string };
   details: HotelDetails;
   verificationStatus: string;
   progress: { nextStep: string; completedSteps: string[]; rooms: number } | null;
 };
 
 type Raw = Record<string, unknown>;
+
+/** "…, Lower Hunza Tehsil, Hunza District, Gilgit Division, …" → "Hunza". */
+function districtFrom(address: string) {
+  const part = address
+    .split(",")
+    .map((p) => p.trim())
+    .find((p) => / District$/i.test(p));
+  return part ? part.replace(/ District$/i, "").trim() : "";
+}
 
 export async function getLodgingProfile(): Promise<LodgingProfile> {
   const data = await customerGet<Raw>("/providers/me");
@@ -114,6 +125,11 @@ export async function getLodgingProfile(): Promise<LodgingProfile> {
     address: String(structured?.formattedAddress ?? data.address ?? ""),
     yearsExperience: Number(data.yearsExperience ?? 0),
     location: Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0) ? { latitude: lat, longitude: lng } : null,
+    pinned: {
+      area: String(structured?.area ?? "").trim(),
+      district:
+        districtFrom(String(structured?.formattedAddress ?? data.address ?? "")) || String(data.city ?? "").trim(),
+    },
     details: (data.hotelDetails as HotelDetails | undefined) ?? {},
     verificationStatus: String(data.verificationStatus ?? "pending"),
     progress: progress?.nextStep

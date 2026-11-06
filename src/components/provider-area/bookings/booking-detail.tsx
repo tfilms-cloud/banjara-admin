@@ -30,6 +30,7 @@ import {
   LogIn,
   LogOut,
 } from "lucide-react";
+import { pakistanDate } from "@/lib/home-discovery";
 import { useQuery } from "@/lib/live-query";
 import {
   PAYMENT_ISSUES,
@@ -121,7 +122,11 @@ export function BookingDetail({ id }: { id: string }) {
   const stay = x.stay;
   // Hotel stays finish at check-out; rides are marked completed after the trip.
   const canComplete = !stay && x.status === "confirmed" && tripOver;
-  const canCheckIn = Boolean(stay && x.status === "confirmed" && stay.status === "booked");
+  const awaitingStay = Boolean(stay && x.status === "confirmed" && stay.status === "booked");
+  // Guests are checked in from their check-in day (Pakistan time), as the API enforces.
+  const arrivalDay = Boolean(stay && stay.checkIn && stay.checkIn <= pakistanDate());
+  const canCheckIn = awaitingStay && arrivalDay;
+  const notYetArrived = awaitingStay && !arrivalDay;
   const canCheckOut = Boolean(stay && x.status === "confirmed" && stay.status === "checked_in");
   // Online payments must be checked before the booking can be confirmed (cash is settled in person).
   const online = isOnlinePayment(x.paymentMethod);
@@ -185,6 +190,12 @@ export function BookingDetail({ id }: { id: string }) {
           onDecline={() => void act("rejected")}
           declining={busy === "rejected"}
         />
+      ) : notYetArrived && stay ? (
+        <div className={b.actionBar}>
+          <span>
+            This stay starts on {stayDay(stay.checkIn)}. You can check the guest in from that day.
+          </span>
+        </div>
       ) : pending || canComplete || canCheckIn || canCheckOut ? (
         <div className={b.actionBar}>
           <span>

@@ -17,7 +17,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useQuery } from "@/lib/live-query";
+import { useBackendStatus, useQuery } from "@/lib/live-query";
 import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
 import { getProviderApplication } from "@/services/customer/auth.service";
 import {
@@ -37,7 +37,7 @@ const PROOF_IN = ["proof_submitted", "under_review", "disputed"];
 
 /** Provider bookings, grouped like the app: approval first, then confirmed, then the rest. */
 export function BookingsPage() {
-  const { user } = useCustomerAuth();
+  const { user, loading: authLoading } = useCustomerAuth();
   const application = useQuery({
     queryKey: ["provider", "application", user?.id],
     queryFn: getProviderApplication,
@@ -51,7 +51,17 @@ export function BookingsPage() {
   const [error, setError] = useState("");
   const [showOther, setShowOther] = useState(false);
   const bookings = useQuery({ queryKey: ["provider", "booking-details"], queryFn: () => getProviderBookingDetails(100) });
-  const trips = useQuery({ queryKey: ["provider", "trips"], queryFn: getMyTrips });
+  // Until we know which service this is, show neither the driver nor the host wording.
+  // (While sign-in is restoring there is no user yet, and while the API check is still
+  // "checking" live queries report an error rather than pending, so wait for real data.)
+  const backend = useBackendStatus();
+  const serviceKnown =
+    !authLoading &&
+    (user?.role !== "provider" ||
+      application.isSuccess ||
+      backend === "offline" ||
+      (backend === "online" && application.isError));
+  const trips = useQuery({ queryKey: ["provider", "trips"], queryFn: getMyTrips, enabled: serviceKnown && !isHost });
 
   const all = useMemo(() => bookings.data ?? [], [bookings.data]);
   const term = query.trim().toLowerCase();
@@ -88,6 +98,16 @@ export function BookingsPage() {
     }
   };
 
+  if (!serviceKnown) {
+    return (
+      <div className={b.page}>
+        <p className={b.loading} role="status">
+          <LoaderCircle size={16} className="animate-spin" /> Loading bookings…
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={b.page}>
       <div className={b.head}>
@@ -97,7 +117,7 @@ export function BookingsPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search name, booking no. or seat"
+            placeholder={isHost ? "Search guest, booking no. or room" : "Search name, booking no. or seat"}
             aria-label="Search bookings"
           />
         </label>
