@@ -26,12 +26,17 @@ import {
   X,
   type LucideIcon,
   Banknote,
+  BedDouble,
+  LogIn,
+  LogOut,
 } from "lucide-react";
 import { useQuery } from "@/lib/live-query";
 import {
   PAYMENT_ISSUES,
   completeBooking,
   markCashReceived,
+  checkInGuest,
+  checkOutGuest,
   confirmBookingPayment,
   getBookingDetail,
   getBookingPayment,
@@ -63,10 +68,29 @@ const VEHICLE_TYPE: Record<string, string> = {
 };
 
 /** One booking in full — the app's "Booking Details" screen. */
+const STAY_STATUS: Record<string, string> = {
+  booked: "Not arrived yet",
+  checked_in: "Checked in",
+  checked_out: "Checked out",
+};
+
+function stayDay(date: string) {
+  const d = new Date(`${date}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString("en-PK", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
+
+function stayDates(checkIn: string, checkOut: string) {
+  const fmt = (date: string) => {
+    const d = new Date(`${date}T12:00:00`);
+    return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
+  };
+  return `${fmt(checkIn)} → ${fmt(checkOut)}`;
+}
+
 export function BookingDetail({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<
-    "confirmed" | "rejected" | "completed" | "cash" | null
+    "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout" | null
   >(null);
   const [error, setError] = useState("");
   const booking = useQuery({
@@ -94,21 +118,27 @@ export function BookingDetail({ id }: { id: string }) {
   const tripOver =
     x.tripDate &&
     new Date(`${x.tripDate}T${x.departureTime || "00:00"}:00`) < new Date();
-  const canComplete = x.status === "confirmed" && tripOver;
+  const stay = x.stay;
+  // Hotel stays finish at check-out; rides are marked completed after the trip.
+  const canComplete = !stay && x.status === "confirmed" && tripOver;
+  const canCheckIn = Boolean(stay && x.status === "confirmed" && stay.status === "booked");
+  const canCheckOut = Boolean(stay && x.status === "confirmed" && stay.status === "checked_in");
   // Online payments must be checked before the booking can be confirmed (cash is settled in person).
   const online = isOnlinePayment(x.paymentMethod);
   // Cash is paid in person, so the driver records it once the booking is approved.
   const cashDue =
-    x.paymentMethod === "cash" &&
+    (x.paymentMethod === "cash" || x.paymentMethod === "payAtHotel") &&
     ["confirmed", "completed"].includes(x.status) &&
     x.paymentStatus !== "paid";
 
-  const act = async (next: "confirmed" | "rejected" | "completed" | "cash") => {
+  const act = async (next: "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout") => {
     setError("");
     setBusy(next);
     try {
       if (next === "completed") await completeBooking(x.id);
       else if (next === "cash") await markCashReceived(x.id);
+      else if (next === "checkin") await checkInGuest(x.id);
+      else if (next === "checkout") await checkOutGuest(x.id);
       else await setBookingStatus(x.id, next);
       await queryClient.invalidateQueries({ queryKey: ["provider"] });
     } catch (reason) {
@@ -135,10 +165,9 @@ export function BookingDetail({ id }: { id: string }) {
           </p>
           <h2>{x.route || "Booking"}</h2>
           <p className={b.detailSub}>
-            {tripWhen(x.tripDate, x.departureTime)} ·{" "}
-            {x.seats.length
-              ? `Seat ${x.seats.join(", ")}`
-              : `${x.passengers.length} passenger(s)`}
+            {stay
+              ? `${stayDates(stay.checkIn, stay.checkOut)} · ${stay.nights} ${stay.nights === 1 ? "night" : "nights"} · ${stay.rooms} ${stay.rooms === 1 ? "room" : "rooms"} · ${stay.guests} ${stay.guests === 1 ? "guest" : "guests"}`
+              : `${tripWhen(x.tripDate, x.departureTime)} · ${x.seats.length ? `Seat ${x.seats.join(", ")}` : `${x.passengers.length} passenger(s)`}`}
           </p>
         </div>
         <div className={b.detailRight}>
@@ -156,12 +185,16 @@ export function BookingDetail({ id }: { id: string }) {
           onDecline={() => void act("rejected")}
           declining={busy === "rejected"}
         />
-      ) : pending || canComplete ? (
+      ) : pending || canComplete || canCheckIn || canCheckOut ? (
         <div className={b.actionBar}>
           <span>
             {pending
               ? "This traveller is waiting for your answer."
-              : "The trip has passed. Mark it completed when the ride is done."}
+              : canCheckIn
+                ? "When the guest arrives, check them in."
+                : canCheckOut
+                  ? "The guest is staying with you. Check them out when they leave."
+                  : "The trip has passed. Mark it completed when the ride is done."}
           </span>
           <div className={b.actions}>
             {pending ? (
@@ -193,6 +226,22 @@ export function BookingDetail({ id }: { id: string }) {
                   Approve booking
                 </button>
               </>
+            ) : canCheckIn || canCheckOut ? (
+              <button
+                type="button"
+                className={b.approve}
+                disabled={Boolean(busy)}
+                onClick={() => void act(canCheckIn ? "checkin" : "checkout")}
+              >
+                {busy === "checkin" || busy === "checkout" ? (
+                  <LoaderCircle size={14} className="animate-spin" />
+                ) : canCheckIn ? (
+                  <LogIn size={14} />
+                ) : (
+                  <LogOut size={14} />
+                )}{" "}
+                {canCheckIn ? "Check in guest" : "Check out guest"}
+              </button>
             ) : (
               <button
                 type="button"
@@ -241,101 +290,139 @@ export function BookingDetail({ id }: { id: string }) {
           </div>
         </Card>
 
-        <Card icon={Route} title="Trip">
-          <Row label="From" value={x.origin} />
-          <Row label="To" value={x.destination} />
-          <Row
-            label="Departure"
-            value={tripWhen(x.tripDate, x.departureTime)}
-          />
-          <Row
-            label="Arrival"
-            value={x.arrivalDate ? tripWhen(x.arrivalDate, x.arrivalTime) : ""}
-          />
-          <Row
-            label="Journey"
-            value={
-              x.journeyType === "round_trip"
-                ? "Round trip"
-                : x.journeyType
-                  ? "One way"
-                  : ""
-            }
-          />
-          <Row
-            label="Booking mode"
-            value={
-              x.bookingMode === "vehicle"
-                ? "Whole vehicle"
-                : x.bookingMode
-                  ? "By seat"
-                  : ""
-            }
-          />
-          {x.tripId ? (
-            <Link href={`/provider/trips/${x.tripId}`} className={b.mini}>
-              View trip
-            </Link>
-          ) : null}
-        </Card>
+        {stay ? (
+          <>
+            <Card icon={BedDouble} title="Stay">
+              <Row label="Room" value={stay.roomName} />
+              <Row label="Property" value={stay.hotelName} />
+              <Row label="Check-in" value={stayDay(stay.checkIn)} />
+              <Row label="Check-out" value={stayDay(stay.checkOut)} />
+              <Row label="Nights" value={String(stay.nights || "")} />
+              <Row label="Rooms" value={String(stay.rooms)} />
+              <Row label="Guests" value={String(stay.guests)} />
+              <Row label="Stay status" value={STAY_STATUS[stay.status] ?? stay.status} />
+            </Card>
+            <Card icon={Users} title="Guest">
+              <ul className={b.passengers}>
+                {x.passengers.map((p, index) => (
+                  <li key={`${p.name}-${index}`}>
+                    <span className={b.avatarSmall}>{(p.name || "?").charAt(0).toUpperCase()}</span>
+                    <span>
+                      <strong>{p.name || "Guest"}</strong>
+                      {p.phone ? <small>{p.phone}</small> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {stay.specialRequests ? (
+                <p className={b.muted}>Requests: {stay.specialRequests}</p>
+              ) : null}
+            </Card>
+          </>
+        ) : (
+          <>
+            <Card icon={Route} title="Trip">
+              <Row label="From" value={x.origin} />
+              <Row label="To" value={x.destination} />
+              <Row
+                label="Departure"
+                value={tripWhen(x.tripDate, x.departureTime)}
+              />
+              <Row
+                label="Arrival"
+                value={x.arrivalDate ? tripWhen(x.arrivalDate, x.arrivalTime) : ""}
+              />
+              <Row
+                label="Journey"
+                value={
+                  x.journeyType === "round_trip"
+                    ? "Round trip"
+                    : x.journeyType
+                      ? "One way"
+                      : ""
+                }
+              />
+              <Row
+                label="Booking mode"
+                value={
+                  x.bookingMode === "vehicle"
+                    ? "Whole vehicle"
+                    : x.bookingMode
+                      ? "By seat"
+                      : ""
+                }
+              />
+              {x.tripId ? (
+                <Link href={`/provider/trips/${x.tripId}`} className={b.mini}>
+                  View trip
+                </Link>
+              ) : null}
+            </Card>
 
-        <Card icon={MapPin} title="Pickup & drop-off">
-          <Row label="Pickup" value={x.pickup} />
-          <Row
-            label="Pickup address"
-            value={x.pickupAddress !== x.pickup ? x.pickupAddress : ""}
-          />
-          <Row label="Drop-off" value={x.dropoff} />
-          <Row
-            label="Drop-off address"
-            value={x.dropoffAddress !== x.dropoff ? x.dropoffAddress : ""}
-          />
-          {!x.pickup && !x.dropoff ? (
-            <p className={b.muted}>
-              The traveller didn’t choose a pickup or drop-off point.
-            </p>
-          ) : null}
-        </Card>
+            <Card icon={MapPin} title="Pickup & drop-off">
+              <Row label="Pickup" value={x.pickup} />
+              <Row
+                label="Pickup address"
+                value={x.pickupAddress !== x.pickup ? x.pickupAddress : ""}
+              />
+              <Row label="Drop-off" value={x.dropoff} />
+              <Row
+                label="Drop-off address"
+                value={x.dropoffAddress !== x.dropoff ? x.dropoffAddress : ""}
+              />
+              {!x.pickup && !x.dropoff ? (
+                <p className={b.muted}>
+                  The traveller didn’t choose a pickup or drop-off point.
+                </p>
+              ) : null}
+            </Card>
 
-        <Card icon={Users} title="Seats & passengers">
-          {x.seats.length ? (
-            <div className={b.seatChips}>
-              {x.seats.map((seat) => (
-                <span key={seat}>{seat}</span>
-              ))}
-            </div>
-          ) : null}
-          <ul className={b.passengers}>
-            {x.passengers.map((p, index) => (
-              <li key={`${p.name}-${index}`}>
-                <span className={b.avatarSmall}>
-                  {(p.name || "?").charAt(0).toUpperCase()}
-                </span>
-                <span>
-                  <strong>{p.name || "Passenger"}</strong>
-                  {p.phone ? <small>{p.phone}</small> : null}
-                </span>
-                {x.seats[index] ? <em>Seat {x.seats[index]}</em> : null}
-              </li>
-            ))}
-          </ul>
-        </Card>
+            <Card icon={Users} title="Seats & passengers">
+              {x.seats.length ? (
+                <div className={b.seatChips}>
+                  {x.seats.map((seat) => (
+                    <span key={seat}>{seat}</span>
+                  ))}
+                </div>
+              ) : null}
+              <ul className={b.passengers}>
+                {x.passengers.map((p, index) => (
+                  <li key={`${p.name}-${index}`}>
+                    <span className={b.avatarSmall}>
+                      {(p.name || "?").charAt(0).toUpperCase()}
+                    </span>
+                    <span>
+                      <strong>{p.name || "Passenger"}</strong>
+                      {p.phone ? <small>{p.phone}</small> : null}
+                    </span>
+                    {x.seats[index] ? <em>Seat {x.seats[index]}</em> : null}
+                  </li>
+                ))}
+              </ul>
+            </Card>
 
-        <Card icon={CarFront} title="Vehicle">
-          <Row label="Name" value={x.vehicleName} />
-          <Row
-            label="Type"
-            value={VEHICLE_TYPE[x.vehicleType] ?? x.vehicleType}
-          />
-          <Row label="Plate" value={x.vehiclePlate} mono />
-        </Card>
+            <Card icon={CarFront} title="Vehicle">
+              <Row label="Name" value={x.vehicleName} />
+              <Row
+                label="Type"
+                value={VEHICLE_TYPE[x.vehicleType] ?? x.vehicleType}
+              />
+              <Row label="Plate" value={x.vehiclePlate} mono />
+            </Card>
+
+          </>
+        )}
 
         <Card icon={CreditCard} title="Payment">
           <Row label="Status" value={paymentLabel(x.paymentStatus, "")} />
           <Row label="Method" value={methodLabel(x.paymentMethod)} />
           {cashDue ? (
             <div className={b.cashDue}>
-              <p>Collect {rupees(x.amount)} in cash from the traveller, then record it here.</p>
+              <p>
+                {stay
+                  ? `Collect ${rupees(x.amount)} from the guest at the property, then record it here.`
+                  : `Collect ${rupees(x.amount)} in cash from the traveller, then record it here.`}
+              </p>
               <button
                 type="button"
                 className={b.approve}
@@ -347,7 +434,7 @@ export function BookingDetail({ id }: { id: string }) {
                 ) : (
                   <Banknote size={14} />
                 )}{" "}
-                Cash received
+                {stay ? "Payment received" : "Cash received"}
               </button>
             </div>
           ) : null}

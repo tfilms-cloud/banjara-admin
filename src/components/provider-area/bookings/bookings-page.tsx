@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { useQuery } from "@/lib/live-query";
+import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
+import { getProviderApplication } from "@/services/customer/auth.service";
 import {
   getMyTrips,
   getProviderBookingDetails,
@@ -35,6 +37,14 @@ const PROOF_IN = ["proof_submitted", "under_review", "disputed"];
 
 /** Provider bookings, grouped like the app: approval first, then confirmed, then the rest. */
 export function BookingsPage() {
+  const { user } = useCustomerAuth();
+  const application = useQuery({
+    queryKey: ["provider", "application", user?.id],
+    queryFn: getProviderApplication,
+    enabled: user?.role === "provider",
+  });
+  // Hotel owners see rooms and stays; drivers see seats and their trips.
+  const isHost = Boolean(application.data?.services.includes("hotel"));
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -62,7 +72,8 @@ export function BookingsPage() {
     .sort((x, y) => `${x.departureDate}${x.departureTime}`.localeCompare(`${y.departureDate}${y.departureTime}`));
   const seatsBooked = all
     .filter((x) => CONFIRMED.includes(x.status))
-    .reduce((sum, x) => sum + (x.seats.length || 1), 0);
+    .reduce((sum, x) => sum + (x.stay ? x.stay.rooms : x.seats.length || 1), 0);
+
 
   const decide = async (booking: BookingDetail, status: "confirmed" | "rejected") => {
     setError("");
@@ -80,7 +91,7 @@ export function BookingsPage() {
   return (
     <div className={b.page}>
       <div className={b.head}>
-        <p>Manage traveller requests and see who’s riding with you.</p>
+        <p>{isHost ? "Manage booking requests and see who’s staying with you." : "Manage traveller requests and see who’s riding with you."}</p>
         <label className={b.search}>
           <Search size={15} />
           <input
@@ -95,8 +106,12 @@ export function BookingsPage() {
       <div className={b.stats}>
         <Stat label="Needs approval" value={all.filter((x) => PENDING.includes(x.status)).length} tone={pending.length ? "amber" : undefined} />
         <Stat label="Confirmed" value={all.filter((x) => CONFIRMED.includes(x.status)).length} />
-        <Stat label="Seats booked" value={seatsBooked} />
-        <Stat label="Upcoming trips" value={activeTrips.length} />
+        <Stat label={isHost ? "Rooms booked" : "Seats booked"} value={seatsBooked} />
+        {isHost ? (
+          <Stat label="Staying now" value={all.filter((x) => x.stay?.status === "checked_in").length} />
+        ) : (
+          <Stat label="Upcoming trips" value={activeTrips.length} />
+        )}
       </div>
 
       {error ? <p className={b.error}>{error}</p> : null}
@@ -109,7 +124,7 @@ export function BookingsPage() {
         <p className={b.error}>{bookings.error.message}</p>
       ) : (
         <>
-          <Section title="Needs your approval" count={pending.length} hint="Approve quickly so travellers can plan their trip.">
+          <Section title="Needs your approval" count={pending.length} hint={isHost ? "Answer quickly so guests can plan their stay." : "Approve quickly so travellers can plan their trip."}>
             {pending.length ? (
               pending.map((x) => (
                 <BookingCard key={x.id} booking={x}>
@@ -137,7 +152,7 @@ export function BookingsPage() {
             )}
           </Section>
 
-          <Section title="Confirmed" count={confirmed.length} hint="Travellers riding with you.">
+          <Section title="Confirmed" count={confirmed.length} hint={isHost ? "Guests staying with you." : "Travellers riding with you."}>
             {confirmed.length ? confirmed.map((x) => <BookingCard key={x.id} booking={x} />) : <Empty>No confirmed bookings yet.</Empty>}
           </Section>
 
@@ -159,6 +174,7 @@ export function BookingsPage() {
         </>
       )}
 
+      {isHost ? null : (
       <Section
         title="Active trips"
         count={activeTrips.length}
@@ -200,6 +216,7 @@ export function BookingsPage() {
           <Empty>No upcoming trips. Create one so travellers can book.</Empty>
         )}
       </Section>
+      )}
     </div>
   );
 }
@@ -247,6 +264,11 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 /** One booking: passengers first (who's riding), then the trip, seats and money. */
+function shortDay(date: string) {
+  const d = new Date(`${date}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString("en-PK", { day: "numeric", month: "short" });
+}
+
 function BookingCard({ booking, children }: { booking: BookingDetail; children?: React.ReactNode }) {
   const status = bookingStatus(booking.status);
   const names = booking.passengers.map((p) => p.name).filter(Boolean);
@@ -261,10 +283,18 @@ function BookingCard({ booking, children }: { booking: BookingDetail; children?:
             {names.length > 1 ? <em> +{names.length - 1} more</em> : null}
           </strong>
           <span>
-            <CalendarCheck size={12} /> {booking.route || "Trip"} · {tripWhen(booking.tripDate, booking.departureTime)}
+            <CalendarCheck size={12} /> {booking.route || "Trip"} ·{" "}
+            {booking.stay
+              ? `${shortDay(booking.stay.checkIn)} → ${shortDay(booking.stay.checkOut)} · ${booking.stay.nights} ${booking.stay.nights === 1 ? "night" : "nights"}`
+              : tripWhen(booking.tripDate, booking.departureTime)}
           </span>
           <span>
-            <Users size={12} /> {booking.seats.length ? `Seat ${booking.seats.join(", ")}` : `${booking.passengers.length} passenger(s)`}
+            <Users size={12} />{" "}
+            {booking.stay
+              ? `${booking.stay.rooms} ${booking.stay.rooms === 1 ? "room" : "rooms"} · ${booking.stay.guests} ${booking.stay.guests === 1 ? "guest" : "guests"}${booking.stay.status === "checked_in" ? " · checked in" : ""}`
+              : booking.seats.length
+                ? `Seat ${booking.seats.join(", ")}`
+                : `${booking.passengers.length} passenger(s)`}
             {booking.pickup ? (
               <>
                 {" "}

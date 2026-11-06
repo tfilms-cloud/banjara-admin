@@ -23,8 +23,7 @@ import {
   getProviderApplication,
   type ProviderApplication,
 } from "@/services/customer/auth.service";
-import { DRIVER_STEPS, driverStepHref } from "@/lib/driver-steps";
-import type { DriverStep } from "@/services/customer/auth.service";
+import { DRIVER_STEPS, applicationSteps, nextStepHref } from "@/lib/driver-steps";
 import styles from "./provider-home.module.css";
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -44,6 +43,22 @@ type Stage = {
   body: string;
   steps: string[];
 };
+
+/** A lodging owner who has submitted and is waiting for BANJARA's review. */
+function lodgingSubmittedStage(): Stage {
+  return {
+    tone: "wait",
+    icon: Hourglass,
+    badge: "Under review",
+    title: "Your property is with our team",
+    body: "Thanks for applying. We’re checking your property details, photos and rooms — this usually takes 1–2 working days. We’ll notify you as soon as you’re approved.",
+    steps: [
+      "We review your details, business registration and photos.",
+      "If anything needs a fix, we’ll tell you what to change.",
+      "Once approved, your property goes live and travellers can book your rooms.",
+    ],
+  };
+}
 
 /** A driver who has submitted and is waiting for BANJARA's review. */
 function submittedStage(cnicVerified: boolean): Stage {
@@ -169,7 +184,7 @@ export function ProviderHome() {
     ? application.data === null
       ? "/provider-application"
       : pending
-        ? driverStepHref(application.data.progress?.nextStep)
+        ? nextStepHref(application.data)
         : null
     : null;
   useEffect(() => {
@@ -205,14 +220,17 @@ export function ProviderHome() {
   const progress = data?.verificationStatus === "pending" ? data.progress : undefined;
   const stage =
     progress?.nextStep === "submitted"
-      ? submittedStage(progress.cnicVerified !== false)
+      ? data?.services.includes("hotel")
+        ? lodgingSubmittedStage()
+        : submittedStage(progress.cnicVerified !== false)
       : progress
         ? driverStage()
         : stageFor(data);
   const Icon = stage.icon;
   const service = data?.services?.[0];
   // Drivers can do some steps on the website; link the next one when it has a page.
-  const nextHref = data?.verificationStatus === "pending" ? driverStepHref(data.progress?.nextStep) : null;
+  const nextHref = data?.verificationStatus === "pending" ? nextStepHref(data) : null;
+  const steps = applicationSteps(data?.services) ?? DRIVER_STEPS;
 
   return (
     <section className={styles.page}>
@@ -251,9 +269,9 @@ export function ProviderHome() {
 
         {progress && progress.nextStep !== "submitted" ? (
           <ol className={styles.stepper} aria-label="Your application">
-            {DRIVER_STEPS.map((step, index) => {
+            {steps.map((step, index) => {
               const done =
-                index < 2 || progress.completedSteps.includes(step.key as DriverStep);
+                index < 2 || progress.completedSteps.includes(step.key as never);
               const current = step.key === progress.nextStep;
               return (
                 <li

@@ -276,6 +276,7 @@ export function mapHotel(raw: AnyRecord): Hotel {
   return {
     id: idOf(raw),
     providerId: idOf(raw.providerId),
+    providerUserId: raw.providerUserId ? String(raw.providerUserId) : undefined,
     managerName: String(raw.managerName ?? "").trim() || undefined,
     yearsExperience: Number(raw.yearsExperience ?? 0) || undefined,
     restaurantAvailable: Boolean(raw.restaurantAvailable),

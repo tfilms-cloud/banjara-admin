@@ -34,6 +34,7 @@ import { BookingsPage } from "../bookings/bookings-page";
 import { PaymentsPage } from "../payments/payments-page";
 import { MessagesPage } from "../messages/messages-page";
 import { SettingsSection } from "../settings/settings-section";
+import { AvailabilitySection, RoomsSection } from "../hotel/hotel-sections";
 import s from "./sections.module.css";
 
 const rupees = (value: number) => `Rs ${Math.round(value).toLocaleString("en-PK")}`;
@@ -524,4 +525,6 @@ export const BUILT_SECTIONS: Record<string, () => ReactNode> = {
   payments: PaymentsPage,
   messages: MessagesPage,
   settings: SettingsSection,
+  rooms: RoomsSection,
+  availability: AvailabilitySection,
 };

@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BedDouble,
   Bell,
+  CalendarRange,
   CalendarCheck,
   CarFront,
   CreditCard,
@@ -36,13 +38,18 @@ type NavItem = {
 };
 
 /** Same sections as the app's provider side (tabs plus the "more" screens). */
-function navFor(isDriver: boolean): Array<{ title: string; items: NavItem[] }> {
+function navFor(isDriver: boolean, isHost: boolean): Array<{ title: string; items: NavItem[] }> {
   return [
     {
       title: "Main",
       items: [
         { href: "/provider", label: "Dashboard", icon: LayoutDashboard, open: true },
-        { href: "/provider/trips", label: isDriver ? "My trips" : "My service", icon: CarFront },
+        ...(isHost
+          ? [
+              { href: "/provider/rooms", label: "My rooms", icon: BedDouble },
+              { href: "/provider/availability", label: "Availability", icon: CalendarRange },
+            ]
+          : [{ href: "/provider/trips", label: isDriver ? "My trips" : "My service", icon: CarFront }]),
         { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck },
         { href: "/provider/earnings", label: "Earnings", icon: Wallet },
       ],
@@ -69,6 +76,8 @@ function navFor(isDriver: boolean): Array<{ title: string; items: NavItem[] }> {
 const TITLES: Record<string, string> = {
   "/provider": "Dashboard",
   "/provider/trips": "My trips",
+  "/provider/rooms": "My rooms",
+  "/provider/availability": "Availability",
   "/provider/bookings": "Bookings",
   "/provider/earnings": "Earnings",
   "/provider/messages": "Messages",
@@ -100,8 +109,9 @@ export function ProviderShell({ children }: { children: ReactNode }) {
   });
   const data = application.data;
   const approved = data?.verificationStatus === "approved";
-  const isDriver = data?.services?.includes("transport") ?? true;
-  const groups = navFor(isDriver);
+  const isHost = Boolean(data?.services?.includes("hotel"));
+  const isDriver = !isHost && (data?.services?.includes("transport") ?? true);
+  const groups = navFor(isDriver, isHost);
 
   // Close the phone drawer after navigating, and with Escape.
   useEffect(() => {
@@ -132,7 +142,7 @@ export function ProviderShell({ children }: { children: ReactNode }) {
             <BrandLogo size={34} />
             <span>
               BANJARA
-              <small>{isDriver ? "Driver" : "Provider"}</small>
+              <small>{isHost ? "Host" : isDriver ? "Driver" : "Provider"}</small>
             </span>
           </Link>
           <button type="button" className={styles.closeDrawer} onClick={() => setOpen(false)} aria-label="Close menu">

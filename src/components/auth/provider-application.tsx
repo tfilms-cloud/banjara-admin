@@ -29,14 +29,17 @@ import {
 } from "lucide-react";
 import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
 import { getProviderApplication } from "@/services/customer/auth.service";
+import { getLodgingProfile } from "@/services/customer/lodging.service";
 import {
-  getDriverReview,
   listActiveProviderServices,
   startProviderApplication,
   updateDriverDetails,
   type ProviderServiceKey,
 } from "@/services/customer/provider-application.service";
-import { DRIVER_STEP_TOTAL, driverStepHref } from "@/lib/driver-steps";
+import { DRIVER_STEP_TOTAL, LODGING_STEP_TOTAL, nextStepHref } from "@/lib/driver-steps";
+
+/** Services whose whole application is on the website. */
+const WEB_STEPS: Partial<Record<string, number>> = { transport: DRIVER_STEP_TOTAL, hotel: LODGING_STEP_TOTAL };
 import { AuthShell } from "./auth-shell";
 import { AuthBanner, AuthField } from "./auth-fields";
 import styles from "./auth.module.css";
@@ -161,7 +164,7 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
   // form with the saved values instead of resuming at the next unfinished step.
   const saved = useQuery({
     queryKey: ["provider", "review-for-edit", user?.id],
-    queryFn: getDriverReview,
+    queryFn: getLodgingProfile, // the provider profile, whatever the service
     enabled: isProvider && editing,
     staleTime: 0,
   });
@@ -183,10 +186,10 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  // Already started: carry on at the next unfinished step. Drivers whose details
-  // are still incomplete stay here; other services see their status page.
+  // Already started: carry on at the next unfinished step. Drivers and lodging whose
+  // details are still incomplete stay here; other services see their status page.
   const nextHref = existing.data
-    ? (driverStepHref(existing.data.progress?.nextStep) ?? "/provider")
+    ? (nextStepHref(existing.data) ?? "/provider")
     : null;
   const resumeHref = editing || nextHref === "/provider-application" ? null : nextHref;
   const alreadyStarted = Boolean(resumeHref);
@@ -221,7 +224,7 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
   if (editing) {
     if (saved.isPending) {
       return (
-        <AuthShell caption="Local driver" title="Your details">
+        <AuthShell caption="Your application" title="Your details">
           <p className={styles.note} role="status">
             <LoaderCircle size={15} className="animate-spin" /> Loading your details…
           </p>
@@ -230,17 +233,19 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
     }
     if (saved.isError || !saved.data) {
       return (
-        <AuthShell caption="Local driver" title="We couldn’t open your details">
+        <AuthShell caption="Your application" title="We couldn’t open your details">
           <AuthBanner>{saved.error?.message ?? "Please try again."}</AuthBanner>
         </AuthShell>
       );
     }
     const s = saved.data;
+    const editService: ProviderServiceKey = existing.data?.services.includes("hotel") ? "hotel" : "transport";
     return (
       <DetailsStep
-        service="transport"
+        service={editService}
         editing
         initial={{
+          businessName: s.businessName,
           ownerName: s.ownerName,
           phone: s.phone,
           email: s.email,
@@ -262,8 +267,8 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
         onBack={() => setStep("service")}
         onDone={() => {
           storeService(null);
-          // Drivers carry on with their location; other services finish in the app for now.
-          router.replace(service === "transport" ? "/provider-application/location" : "/provider");
+          // Drivers and lodging carry on with their location; other services finish in the app for now.
+          router.replace(WEB_STEPS[service] ? "/provider-application/location" : "/provider");
         }}
       />
     );
@@ -274,7 +279,7 @@ export function ProviderApplication({ editing = false }: { editing?: boolean }) 
     <AuthShell
       caption="Service provider · Step 2"
       title="What service do you provide?"
-      step={{ current: 2, total: service === "transport" ? DRIVER_STEP_TOTAL : 3 }}
+      step={{ current: 2, total: (service && WEB_STEPS[service]) || 3 }}
       subtitle="Choose one. A BANJARA account offers one service, so travellers always know who they are booking."
       backHref="/"
       backLabel="Finish later"
@@ -371,7 +376,7 @@ function DetailsStep({
   const [error, setError] = useState("");
   const option = SERVICES[service];
   // Drivers have the full application on the web; other services finish in the app.
-  const total = service === "transport" ? DRIVER_STEP_TOTAL : 3;
+  const total = WEB_STEPS[service] ?? 3;
   const schema = option.individual
     ? detailsSchema
     : detailsSchema.extend({
@@ -399,6 +404,7 @@ function DetailsStep({
     if (editing) {
       try {
         await updateDriverDetails({
+          businessName: option.individual ? values.ownerName : values.businessName,
           ownerName: values.ownerName,
           phone: values.phone,
           email: values.email,
@@ -445,7 +451,9 @@ function DetailsStep({
       subtitle={
         service === "transport"
           ? "Rides on BANJARA are offered by local drivers who drive their own vehicle. Travellers will see your name on your rides."
-          : "These details appear on your BANJARA profile once you’re approved."
+          : service === "hotel"
+            ? "Next you’ll pin your property on the map, then add its details, photos and rooms."
+            : "These details appear on your BANJARA profile once you’re approved."
       }
       backHref="/"
       backLabel="Finish later"

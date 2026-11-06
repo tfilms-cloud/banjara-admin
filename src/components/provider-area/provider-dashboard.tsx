@@ -24,6 +24,7 @@ import {
   getProviderDashboard,
   getProviderReviews,
 } from "@/services/customer/provider-dashboard.service";
+import { HotelDashboard } from "./hotel/hotel-sections";
 import styles from "./provider-dashboard.module.css";
 
 const rupees = (value: number) => `Rs ${Math.round(value).toLocaleString("en-PK")}`;
@@ -54,6 +55,9 @@ export function ProviderDashboardPage() {
         <LoaderCircle size={18} className="animate-spin" /> Loading…
       </p>
     );
+  }
+  if (application.data?.verificationStatus === "approved" && application.data.services.includes("hotel")) {
+    return <HotelDashboard />;
   }
   if (application.data?.verificationStatus === "approved") {
     return <Dashboard providerId={application.data.id} city={application.data.city} />;

@@ -227,9 +227,52 @@ export type BookingDetail = ProviderBooking & {
   serviceFee: number;
   discount: number;
   currency: string;
+  bookingType: string;
+  /** Hotel stays only. */
+  stay: {
+    hotelName: string;
+    roomName: string;
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+    rooms: number;
+    guests: number;
+    /** booked → checked_in → checked_out */
+    status: string;
+    specialRequests: string;
+  } | null;
 };
 
 function mapBookingDetail(b: Row): BookingDetail {
+  const detail = mapTransportDetail(b);
+  if (text(b.bookingType) !== "hotel") return detail;
+  // A hotel stay, shaped so the shared lists and cards read sensibly.
+  const guest = (b.guestDetails ?? {}) as Row;
+  const stay = {
+    hotelName: text(b.hotelName),
+    roomName: text(b.roomName),
+    checkIn: text(b.checkIn).slice(0, 10),
+    checkOut: text(b.checkOut).slice(0, 10),
+    nights: num(b.nights),
+    rooms: num(b.roomsCount) || 1,
+    guests: num(b.guestsCount) || 1,
+    status: text(b.stayStatus) || "booked",
+    specialRequests: text(b.specialRequests),
+  };
+  return {
+    ...detail,
+    route: [stay.roomName, stay.hotelName].filter(Boolean).join(" · ") || "Stay",
+    tripDate: stay.checkIn,
+    departureTime: "",
+    arrivalDate: stay.checkOut,
+    passengers: guest.name ? [{ name: text(guest.name), phone: text(guest.phone) }] : detail.passengers,
+    customerPhone: detail.customerPhone || text(guest.phone),
+    customerEmail: detail.customerEmail || text(guest.email),
+    stay,
+  };
+}
+
+function mapTransportDetail(b: Row): BookingDetail {
   const transport = (b.transportBooking ?? {}) as Row;
   const passengers = (Array.isArray(b.passengerDetails) ? b.passengerDetails : Array.isArray(transport.passengerDetails) ? transport.passengerDetails : []) as Row[];
   const seats = Array.isArray(b.seats) ? b.seats : Array.isArray(transport.seats) ? transport.seats : [];
@@ -275,6 +318,8 @@ function mapBookingDetail(b: Row): BookingDetail {
     serviceFee: num(b.serviceFee),
     discount: num(b.discount),
     currency: text(b.currency) || "PKR",
+    bookingType: text(b.bookingType) || "transport",
+    stay: null,
   };
 }
 
@@ -293,6 +338,15 @@ export async function getBookingDetail(id: string): Promise<BookingDetail> {
 /** Records that the traveller paid a cash booking in person. */
 export async function markCashReceived(id: string) {
   await customerPut(`/providers/bookings/${id}/cash-received`, {});
+}
+
+/** Hotel stays: the guest arrived / left. Check-out completes the booking. */
+export async function checkInGuest(id: string) {
+  await customerPut(`/providers/hotel/bookings/${id}/check-in`, {});
+}
+
+export async function checkOutGuest(id: string) {
+  await customerPut(`/providers/hotel/bookings/${id}/check-out`, {});
 }
 
 /** Marks a confirmed booking completed after the trip, like the app. */

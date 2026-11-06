@@ -56,3 +56,52 @@ export async function cancelBooking(id: string): Promise<CustomerBooking> {
 export async function getTicket(id: string) {
   return customerGet<AnyRecord>(`/bookings/${id}/ticket`);
 }
+
+export type HotelBookingResult = {
+  id: string;
+  bookingNumber: string;
+  status: string;
+  totalAmount: number;
+  nights: number;
+};
+
+/**
+ * Requests a room. Paid at the property for now; online wallets (EasyPaisa,
+ * JazzCash) come with BANJARA's merchant accounts.
+ */
+export async function createHotelBooking(input: {
+  hotelId: string;
+  roomId: string;
+  checkIn: string;
+  checkOut: string;
+  rooms: number;
+  guests: number;
+  guest: { name: string; email: string; phone: string; specialRequests?: string };
+}): Promise<HotelBookingResult> {
+  const data = await customerPost<AnyRecord>("/bookings", {
+    bookingType: "hotel",
+    paymentMethod: "payAtHotel",
+    hotelBooking: {
+      hotelId: input.hotelId,
+      roomId: input.roomId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      rooms: input.rooms,
+      guests: input.guests,
+      guestDetails: {
+        name: input.guest.name.trim(),
+        email: input.guest.email.trim().toLowerCase(),
+        phone: input.guest.phone.trim(),
+        ...(input.guest.specialRequests?.trim() ? { specialRequests: input.guest.specialRequests.trim() } : {}),
+      },
+    },
+  });
+  const hotel = (data.hotelBooking ?? {}) as AnyRecord;
+  return {
+    id: String(data._id ?? data.id ?? ""),
+    bookingNumber: String(data.bookingNumber ?? ""),
+    status: String(data.bookingStatus ?? "pending"),
+    totalAmount: Number(data.totalAmount ?? 0),
+    nights: Number(hotel.nights ?? data.nights ?? 0),
+  };
+}

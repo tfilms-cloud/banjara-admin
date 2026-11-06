@@ -3,7 +3,7 @@
 
 import { useId, useRef, useState } from "react";
 import { ImagePlus, LoaderCircle, RefreshCw, Trash2 } from "lucide-react";
-import { uploadVehiclePhoto } from "@/services/customer/provider-application.service";
+import { uploadVehiclePhoto, type UploadFolder } from "@/services/customer/provider-application.service";
 import styles from "./vehicle.module.css";
 
 /** One photo slot: pick a file, it uploads straight away, then shows a preview. */
@@ -15,6 +15,7 @@ export function PhotoUpload({
   onBusyChange,
   error,
   required = false,
+  folder = "vehicles",
 }: {
   label: string;
   hint?: string;
@@ -23,6 +24,8 @@ export function PhotoUpload({
   onBusyChange?: (busy: boolean) => void;
   error?: string;
   required?: boolean;
+  /** Where the photo is stored (vehicles, hotels, rooms). */
+  folder?: UploadFolder;
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -37,7 +40,7 @@ export function PhotoUpload({
     setProgress(0);
     onBusyChange?.(true);
     try {
-      onChange(await uploadVehiclePhoto(file, setProgress));
+      onChange(await uploadVehiclePhoto(file, setProgress, folder));
     } catch (reason) {
       setUploadError(reason instanceof Error ? reason.message : "The photo didn’t upload. Please try again.");
     } finally {

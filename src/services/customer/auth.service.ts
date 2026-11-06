@@ -92,6 +92,18 @@ export type DriverStep =
   | "review"
   | "submitted";
 
+/** Steps of the lodging (hotel / guest house) application, as the backend tracks them. */
+export type LodgingStep =
+  | "business"
+  | "location"
+  | "property"
+  | "photos"
+  | "rooms"
+  | "review"
+  | "submitted";
+
+export type ApplicationStep = DriverStep | LodgingStep;
+
 /** A provider's application, or null when they have not started one yet. */
 export type ProviderApplication = {
   id: string;

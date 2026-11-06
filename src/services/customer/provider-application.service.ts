@@ -84,6 +84,8 @@ export async function startProviderApplication(details: ProviderApplicationDetai
  * from the map pin (step 4), which has its own edit link.
  */
 export async function updateDriverDetails(details: {
+  /** Defaults to the owner’s name (drivers and guides list under their own name). */
+  businessName?: string;
   ownerName: string;
   phone: string;
   email: string;
@@ -91,7 +93,7 @@ export async function updateDriverDetails(details: {
   yearsExperience: number;
 }) {
   return customerPut<Record<string, unknown>>("/providers/me", {
-    businessName: details.ownerName.trim(),
+    businessName: (details.businessName || details.ownerName).trim(),
     ownerName: details.ownerName.trim(),
     phone: details.phone.trim(),
     email: details.email.trim().toLowerCase(),
@@ -230,15 +232,18 @@ export async function getMyDriverProfile() {
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
-/** Uploads one photo the way the app does (`POST /uploads`, folder "vehicles"). */
+export type UploadFolder = "vehicles" | "hotels" | "rooms";
+
+/** Uploads one photo the way the app does (`POST /uploads`). */
 export async function uploadVehiclePhoto(
   file: File,
   onProgress?: (percent: number) => void,
+  folder: UploadFolder = "vehicles",
 ): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Choose a photo (JPG, PNG or WebP).");
   if (file.size > MAX_UPLOAD_BYTES) throw new Error("This photo is larger than 5 MB. Choose a smaller one.");
   const form = new FormData();
-  form.append("folder", "vehicles");
+  form.append("folder", folder);
   form.append("file", file, file.name);
   const result = await customerPost<{ url?: string }>("/uploads", form, {
     headers: { "Content-Type": "multipart/form-data" },

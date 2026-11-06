@@ -1,5 +1,7 @@
 import {
+  BedDouble,
   Bell,
+  CalendarRange,
   CalendarCheck,
   CarFront,
   CreditCard,
@@ -17,6 +19,18 @@ export const PROVIDER_SECTIONS: Record<
   string,
   { title: string; icon: LucideIcon; intro: string; points: string[] }
 > = {
+  rooms: {
+    title: "My rooms",
+    icon: BedDouble,
+    intro: "The room types travellers can book, with prices per night.",
+    points: ["Add and edit room types", "Prices, beds and photos", "How many rooms of each type"],
+  },
+  availability: {
+    title: "Availability",
+    icon: CalendarRange,
+    intro: "Open or close your rooms night by night.",
+    points: ["See booked and free rooms", "Close nights for repairs or private use", "Reopen them any time"],
+  },
   trips: {
     title: "My trips",
     icon: CarFront,

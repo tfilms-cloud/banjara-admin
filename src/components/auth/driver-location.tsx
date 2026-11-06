@@ -20,7 +20,9 @@ import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from "@/lib/map-config";
 import {
   DRIVER_STEP_TOTAL,
-  driverStepHref,
+  LODGING_STEP_TOTAL,
+  lodgingStepNumber,
+  nextStepHref,
   driverStepNumber,
 } from "@/lib/driver-steps";
 import { getProviderApplication } from "@/services/customer/auth.service";
@@ -46,6 +48,25 @@ const LocationMap = dynamic(() => import("./location-map"), {
 });
 
 const STEP = driverStepNumber("location");
+
+/** The same map step serves drivers (their base) and lodging (the property). */
+const COPY = {
+  driver: {
+    caption: `Local driver · Step ${STEP} of ${DRIVER_STEP_TOTAL}`,
+    total: DRIVER_STEP_TOTAL,
+    title: "Where do you drive from?",
+    subtitle: "Pin the place where travellers usually meet you — your home, stand or terminal. It helps travellers find drivers near them.",
+    hint: "Move the map to put the pin on your base",
+  },
+  lodging: {
+    caption: `Lodging · Step ${lodgingStepNumber("location")} of ${LODGING_STEP_TOTAL}`,
+    total: LODGING_STEP_TOTAL,
+    title: "Where is your property?",
+    subtitle: "Pin the entrance of your hotel or guest house so travellers can find it. Search for the area, then move the map to the exact spot.",
+    hint: "Move the map to put the pin on your entrance",
+  },
+};
+type LocationCopy = (typeof COPY)[keyof typeof COPY];
 
 export function describe(address: StructuredAddress | undefined): string {
   if (!address) return "";
@@ -76,7 +97,9 @@ export function DriverLocation() {
     enabled: isProvider,
   });
   const data = application.data;
-  const isDriver = Boolean(data?.services.includes("transport"));
+  const isLodging = Boolean(data?.services.includes("hotel"));
+  const isDriver = Boolean(data?.services.includes("transport")) || isLodging;
+  const copy = isLodging ? COPY.lodging : COPY.driver;
 
   // Only drivers who have started an application belong here.
   useEffect(() => {
@@ -113,7 +136,7 @@ export function DriverLocation() {
   if ((application.isError || start.isError) && backend !== "checking") {
     return (
       <AuthShell
-        caption={`Local driver · Step ${STEP} of ${DRIVER_STEP_TOTAL}`}
+        caption={copy.caption}
         title="Your location"
       >
         <AuthBanner>
@@ -134,7 +157,7 @@ export function DriverLocation() {
   ) {
     return (
       <AuthShell
-        caption={`Local driver · Step ${STEP} of ${DRIVER_STEP_TOTAL}`}
+        caption={copy.caption}
         title="Your location"
       >
         <p className={styles.note} role="status">
@@ -148,7 +171,7 @@ export function DriverLocation() {
   if (start.isError || !start.data) {
     return (
       <AuthShell
-        caption={`Local driver · Step ${STEP} of ${DRIVER_STEP_TOTAL}`}
+        caption={copy.caption}
         title="Your location"
       >
         <AuthBanner>
@@ -163,6 +186,7 @@ export function DriverLocation() {
       initial={start.data}
       initialAddress={data.address ?? ""}
       initialCity={data.city ?? ""}
+      copy={copy}
       onSaved={async () => {
         const fresh = await queryClient.fetchQuery({
           queryKey: ["provider", "application", user.id],
@@ -170,9 +194,7 @@ export function DriverLocation() {
           // Always ask the server: the step just saved changed what comes next.
           staleTime: 0,
         });
-        router.replace(
-          driverStepHref(fresh?.progress?.nextStep) ?? "/provider",
-        );
+        router.replace(nextStepHref(fresh) ?? "/provider");
       }}
     />
   );
@@ -182,11 +204,13 @@ function LocationForm({
   initial,
   initialAddress,
   initialCity,
+  copy,
   onSaved,
 }: {
   initial: { center: LatLng; zoom: number; hasPin: boolean };
   initialAddress: string;
   initialCity: string;
+  copy: LocationCopy;
   onSaved: () => Promise<void>;
 }) {
   const [center, setCenter] = useState<LatLng>(initial.center);
@@ -322,7 +346,7 @@ function LocationForm({
         </button>
       </div>
       {!placed ? (
-        <p className={loc.mapHint}>Move the map to put the pin on your base</p>
+        <p className={loc.mapHint}>{copy.hint}</p>
       ) : null}
     </div>
   );
@@ -330,10 +354,10 @@ function LocationForm({
   return (
     <AuthShell
       aside={map}
-      caption={`Local driver · Step ${STEP} of ${DRIVER_STEP_TOTAL}`}
-      title="Where do you drive from?"
-      step={{ current: STEP, total: DRIVER_STEP_TOTAL }}
-      subtitle="Pin the place where travellers usually meet you — your home, stand or terminal. It helps travellers find drivers near them."
+      caption={copy.caption}
+      title={copy.title}
+      step={{ current: STEP, total: copy.total }}
+      subtitle={copy.subtitle}
       backHref="/"
       backLabel="Finish later"
     >

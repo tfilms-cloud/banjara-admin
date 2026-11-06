@@ -723,11 +723,11 @@ function ConnectedRoomDetails({
                   <ShieldCheck size={16} />
                   {quoted
                     ? "Nightly rates checked for your stay"
-                    : "Confirm your stay before reserving"}
+                    : "Check your dates to reserve"}
                 </p>
                 <small>
-                  Review your quote with the property. Checking availability
-                  does not reserve a room or take payment.
+                  Checking availability does not reserve a room. You reserve
+                  on the next step and pay at the property.
                 </small>
                 {room.freeCancellation && (
                   <p>
@@ -1025,17 +1025,19 @@ function ConnectedRoomDetails({
                     </div>
                   </div>
                   <p>
-                    Confirm taxes, any additional charges and reservation
-                    arrangements with the property. This quote does not hold
-                    inventory.
+                    Tax and BANJARA’s service fee are added when you reserve.
+                    Nothing is paid now: you pay at the property.
                   </p>
-                  <Link href={backHref} className={styles.primary}>
-                    Select this room <ArrowRight size={16} />
+                  <Link
+                    href={`/hotels/${encodeURIComponent(hotel.id)}/rooms/${encodeURIComponent(room.id)}/book?${roomStayQuery(stay)}`}
+                    className={styles.primary}
+                  >
+                    Reserve this room <ArrowRight size={16} />
                   </Link>
                   {phone && (
                     <a href={`tel:${phone}`} className={styles.secondary}>
                       <Phone size={15} />
-                      Call to reserve
+                      Call the property
                     </a>
                   )}
                 </>

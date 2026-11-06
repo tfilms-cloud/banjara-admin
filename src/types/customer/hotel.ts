@@ -32,6 +32,8 @@ export type HotelRoom = {
 export type Hotel = {
   id: string;
   providerId?: string;
+  /** The owner’s user id, for messaging the property. */
+  providerUserId?: string;
   managerName?: string;
   yearsExperience?: number;
   restaurantAvailable?: boolean;
