@@ -46,7 +46,7 @@ export const EXPLORE_DESTINATIONS: ExploreDestination[] = [
     region: "skardu",
     searchName: "Skardu",
     aliases: ["skardu", "baltistan", "deosai", "shangrila"],
-    image: "/explore/skardu-deosai.jpg",
+    image: "/explore/skardu-deosai-clean.jpg",
     description:
       "The Land of Giants plateau, Shangrila, Lower Kachura, Cold Desert Katpana, and remarkable mountain scenery.",
     tags: ["Highest Plateau", "Shangrila Lake", "Himalayan Bears"],
@@ -78,7 +78,7 @@ export const EXPLORE_DESTINATIONS: ExploreDestination[] = [
     region: "swat",
     searchName: "Swat",
     aliases: ["swat", "kalam", "mahodand"],
-    image: "/explore/swat-kalam.jpg",
+    image: "/explore/swat-kalam-clean.jpg",
     description:
       "Ushu Forest cedars, Matiltan cascading waterfalls, and calm lake waters in the green valleys of Swat.",
     tags: ["Pine Forests", "Emerald Lakes", "Valley Escapes"],
@@ -94,7 +94,7 @@ export const EXPLORE_DESTINATIONS: ExploreDestination[] = [
     region: "swat",
     searchName: "Kumrat",
     aliases: ["kumrat", "panjkora", "dir"],
-    image: "/explore/kumrat.jpg",
+    image: "/explore/kumrat-clean.jpg",
     description:
       "Towering deodar woodlands, pristine Panjkora streams, and trails leading into the quiet mountain wilderness.",
     tags: ["Dense Deodar Woods", "Waterfall Trails", "4×4 Camper"],

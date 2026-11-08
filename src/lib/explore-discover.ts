@@ -2,6 +2,7 @@ import { readCatalogFilters } from "@/lib/explore-catalog";
 import { readExploreFilters } from "@/lib/explore-destinations";
 import { readExploreSearch } from "@/lib/explore-search";
 import type { DiscoverParams } from "@/types/customer/discover";
+import { readNearMe } from "@/lib/near-me";
 
 /** URL parameter that holds each service's sub-type selection. */
 export const CATEGORY_KEY = {
@@ -37,6 +38,8 @@ export function discoverParamsFromUrl(params: URLSearchParams) {
           : undefined,
     order: params.get("order") ?? undefined,
     only: params.get("only") ?? undefined,
+    // Near me is a rides feature; other services ignore a stray position in the URL.
+    ...(trips ? nearParams(params) : {}),
     ...(trips
       ? {
           from: search.trip.from || undefined,
@@ -84,4 +87,10 @@ export function listingHref(
     return `/hotels/${card.id}${stayParams && stayParams.size ? `?${stayParams}` : ""}`;
   }
   return `/${card.service}/${card.id}`;
+}
+
+/** "Near me" (rides only): the visitor's position and radius, as the API expects them. */
+function nearParams(params: URLSearchParams): Pick<DiscoverParams, "near" | "radius"> {
+  const near = readNearMe(params);
+  return near ? { near: `${near.lat},${near.lng}`, radius: near.radiusKm } : {};
 }

@@ -16,7 +16,7 @@ export function readExploreSearch(params: URLSearchParams) {
   };
   const trip: TripSearchParams = {
     from: text("from"), to: text("to"), date: date("date"), passengers: count("passengers", 1, 100),
-    journeyType: params.get("journeyType") === "round_trip" ? "round_trip" : undefined,
+    journeyType: params.get("journeyType") === "round_trip" ? "round_trip" : params.get("journeyType") === "one_way" ? "one_way" : undefined,
   };
   const hotel: HotelSearchParams = {
     destination: text("destination"), checkIn: date("checkIn"), checkOut: date("checkOut"),

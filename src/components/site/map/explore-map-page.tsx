@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Crosshair,
   List,
+  LocateFixed,
   MapPin,
   Navigation,
   Route,
@@ -23,6 +24,8 @@ import {
 import { useDiscoverMap } from "@/hooks/use-discover-map";
 import { discoverParamsFromUrl, listingHref } from "@/lib/explore-discover";
 import { directionsUrl } from "@/lib/map-config";
+import { NEAR_MAX_KM, nearBounds, readNearMe } from "@/lib/near-me";
+import { NearRange } from "./near-range";
 import type { DiscoverCard } from "@/types/customer/discover";
 import { MapCanvasLazy } from "./map-canvas-lazy";
 import type { MapBox, PinCard } from "./map-canvas";
@@ -77,6 +80,9 @@ export function ExploreMapPage() {
   const filterKey = params.toString();
   const { catalogFilters, filters, base, category } = discoverParamsFromUrl(params);
   const service = catalogFilters.service;
+  // "Rides near me": the visitor's position and search radius (rides only).
+  const near = service === "transport" ? readNearMe(params) : null;
+  const [rangeOpen, setRangeOpen] = useState(false);
   const wide = useIsWide();
   // The toolbar wraps onto more rows on narrower windows, so measure it instead of guessing.
   const topRef = useRef<HTMLDivElement>(null);
@@ -139,15 +145,28 @@ export function ExploreMapPage() {
 
   const update = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(patch)) {
+    // Near me belongs to rides; switching to another service drops the distance search.
+    const effective =
+      patch.service && patch.service !== "transport" ? { ...patch, near: null, radius: null } : patch;
+    for (const [key, value] of Object.entries(effective)) {
       if (value === null || value === "" || value === "all" || value === "featured") {
         next.delete(key);
       } else next.set(key, value);
     }
     router.replace(`/explore/map${next.size ? `?${next}` : ""}`, { scroll: false });
   };
+  const setRadius = (km: number) => {
+    setRangeOpen(false);
+    setPicked(null);
+    update({ radius: String(km) });
+  };
+  const allRides = () => {
+    setRangeOpen(false);
+    update({ near: null, radius: null });
+  };
 
-  const bounds = data?.bounds ?? null;
+  // Near me frames the search circle, so the visitor sees their surroundings even with few pins.
+  const bounds = near ? nearBounds(near) : (data?.bounds ?? null);
   const loading = result.isPending;
   const empty = !loading && !result.isError && pins.length === 0;
   // Keep pins clear of the floating controls when fitting or centring.
@@ -171,6 +190,7 @@ export function ExploreMapPage() {
           inset={inset}
           onUserMove={(box) => setPending({ key: filterKey, box })}
           locateToken={locateToken}
+          nearby={near}
           ariaLabel={`Map of ${NOUN[service]}`}
         />
       </div>
@@ -334,10 +354,10 @@ export function ExploreMapPage() {
             <div className={styles.panelHead}>
               <div>
                 <h2>
-                  {pins.length} {pins.length === 1 ? "place" : NOUN[service]}
-                  {activeArea ? " in this area" : ""}
+                  {pins.length} {pins.length === 1 ? (near ? "ride" : "place") : NOUN[service]}
+                  {near ? ` within ${near.radiusKm} km` : activeArea ? " in this area" : ""}
                 </h2>
-                <p>Tap one to see it on the map</p>
+                <p>{near ? "Nearest pickup first · tap one to see it" : "Tap one to see it on the map"}</p>
               </div>
               {!wide && (
                 <button
@@ -352,7 +372,13 @@ export function ExploreMapPage() {
             </div>
             <div className={styles.scroll}>
               {pins.length === 0 && !loading && (
-                <p className={styles.empty}>Nothing to show for these filters yet.</p>
+                <p className={styles.empty}>
+                  {near
+                    ? near.radiusKm >= NEAR_MAX_KM
+                      ? `No pickups within ${near.radiusKm} km yet. You can browse all rides instead.`
+                      : `No pickups within ${near.radiusKm} km yet. Widen the search distance on the map.`
+                    : "Nothing to show for these filters yet."}
+                </p>
               )}
               {pins.map((pin) => (
                 <button
@@ -383,7 +409,14 @@ export function ExploreMapPage() {
                     </h3>
                     <span className={styles.where}>
                       <MapPin size={12} aria-hidden="true" />
-                      <span>{pin.location.address}</span>
+                      <span>
+                        {pin.distanceKm !== undefined && (
+                          <b className={styles.distance}>
+                            {pin.distanceKm < 1 ? "Under 1 km" : `${pin.distanceKm} km`} away ·{" "}
+                          </b>
+                        )}
+                        {pin.location.address}
+                      </span>
                     </span>
                     {pin.tags.length > 0 && (
                       <span className={styles.chips}>
@@ -413,6 +446,17 @@ export function ExploreMapPage() {
       </aside>
 
       <div className={styles.floatMid}>
+        {near && !empty && !loading && !rangeOpen && (
+          <button
+            type="button"
+            className={`${styles.pill} ${styles.pillPrimary}`}
+            onClick={() => setRangeOpen((open) => !open)}
+            aria-expanded={rangeOpen}
+          >
+            <LocateFixed size={14} aria-hidden="true" />
+            Within {near.radiusKm} km · Change
+          </button>
+        )}
         {activeArea ? (
           <button
             type="button"
@@ -460,7 +504,23 @@ export function ExploreMapPage() {
         <Crosshair size={20} aria-hidden="true" />
       </button>
 
-      {(loading || result.isError || empty) && (
+      {near && !loading && !result.isError && (empty || rangeOpen) && (
+        // Sits low in the visible map so the visitor's dot and the search circle stay in view.
+        <div
+          className={`${styles.status} ${styles.statusLow}`}
+          style={wide ? { paddingLeft: 404 + 14 } : undefined}
+        >
+          <NearRange
+            key={near.radiusKm}
+            radiusKm={near.radiusKm}
+            empty={empty}
+            onApply={setRadius}
+            onAllRides={allRides}
+            onClose={empty ? undefined : () => setRangeOpen(false)}
+          />
+        </div>
+      )}
+      {(loading || result.isError || (empty && !near)) && (
         <div className={styles.status} role="status">
           <div className={styles.statusCard}>
             {loading ? (

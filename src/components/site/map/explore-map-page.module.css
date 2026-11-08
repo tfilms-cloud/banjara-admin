@@ -661,3 +661,19 @@
     height: 104px;
   }
 }
+
+/* Near me: distance shown before the address on each card. */
+.distance {
+  font-weight: 700;
+  color: #0b7471;
+}
+.statusLow {
+  align-items: end;
+  padding-bottom: 24px;
+}
+@media (max-width: 900px) {
+  /* Phones: clear of the floating List button. */
+  .statusLow {
+    padding-bottom: 88px;
+  }
+}

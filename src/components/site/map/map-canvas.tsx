@@ -39,6 +39,8 @@ type Props = {
   onUserMove?: (box: MapBox) => void;
   /** Increment to centre the map on the visitor's position. */
   locateToken?: number;
+  /** "Near me": draw the visitor's position and the search radius. */
+  nearby?: { lat: number; lng: number; radiusKm: number } | null;
   ariaLabel?: string;
 };
 
@@ -105,6 +107,7 @@ export default function MapCanvas({
   interactive = true,
   onUserMove,
   locateToken = 0,
+  nearby = null,
   ariaLabel = "Map of listings",
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -352,6 +355,38 @@ export default function MapCanvas({
     restyle(hoverId, true);
     hovered.current = hoverId;
   }, [hoverId, pins]);
+
+  // 6b. "near me": the visitor's dot and the search circle
+  const nearLat = nearby?.lat;
+  const nearLng = nearby?.lng;
+  const nearKm = nearby?.radiusKm;
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || nearLat === undefined || nearLng === undefined || !nearKm) return;
+    const layer = L.layerGroup().addTo(instance);
+    L.circle([nearLat, nearLng], {
+      radius: nearKm * 1000,
+      color: "#0f9b98",
+      weight: 2,
+      dashArray: "6 8",
+      fillColor: "#16b364",
+      fillOpacity: 0.07,
+      interactive: false,
+    }).addTo(layer);
+    L.marker([nearLat, nearLng], {
+      icon: L.divIcon({
+        className: styles.pinWrap,
+        html: `<span class="${styles.youDot}"></span><span class="${styles.youLabel}">You</span>`,
+        iconSize: [0, 0],
+      }),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: -100,
+    }).addTo(layer);
+    return () => {
+      layer.remove();
+    };
+  }, [nearLat, nearLng, nearKm]);
 
   // 6. "my location"
   useEffect(() => {

@@ -42,6 +42,8 @@ export type DiscoverCard = {
   languages?: string[];
   freeCancellation?: boolean;
   breakfastIncluded?: boolean;
+  /** Only with `near`: distance in km from the visitor to the pin. */
+  distanceKm?: number;
 };
 
 export type DiscoverOptions = {
@@ -58,6 +60,8 @@ export type DiscoverResult = {
   applied: { order: DiscoverSort; only: DiscoverToggle[]; category: string | null };
   /** Map view: [[south, west], [north, east]] around the returned pins. */
   bounds: [[number, number], [number, number]] | null;
+  /** The "near me" search the server applied (absent on older servers). */
+  near?: { lat: number; lng: number; radiusKm: number } | null;
 };
 
 export type DiscoverParams = {
@@ -72,6 +76,9 @@ export type DiscoverParams = {
   view?: "list" | "map";
   /** Viewport "west,south,east,north". */
   bbox?: string;
+  /** "Near me": visitor position "lat,lng" and radius in km. */
+  near?: string;
+  radius?: number;
   from?: string;
   to?: string;
   date?: string;

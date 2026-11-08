@@ -1,25 +1,21 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@/lib/live-query";
+import { keepPreviousData, useQuery } from "@/lib/live-query";
 import {
+  ArrowDownAZ,
   ArrowRight,
   ArrowUpDown,
-  Compass,
+  ArrowUpNarrowWide,
   Mountain,
-  Navigation,
-  Search,
   SlidersHorizontal,
+  Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import {
-  HomeDialog,
-  HomeImage,
-  HomeState,
-  SectionHeading,
-} from "@/components/site/home/home-primitives";
+import { ChipDropdown } from "./chip-dropdown";
+import { HomeDialog, HomeImage } from "@/components/site/home/home-primitives";
 import { useSavedDestinations } from "@/hooks/use-saved-destinations";
 import {
   EXPLORE_DESTINATIONS,
@@ -47,17 +43,15 @@ import {
 import type { TripWithDetails } from "@/types/customer/trip";
 import type { Hotel } from "@/types/customer/hotel";
 import { DestinationCard } from "./destination-card";
-import {
-  ExploreDiscoverFilters,
-  ExploreDiscoverResults,
-  ExploreServiceSelector,
-} from "./service-catalog";
-import { TransporterCards } from "@/components/site/agency/transporter-cards";
 import { getDiscover } from "@/services/customer/discover.service";
-import { discoverParamsFromUrl } from "@/lib/explore-discover";
-import { ExploreMapPreview } from "@/components/site/map/explore-map-preview";
-import { catalogMatches, readCatalogFilters } from "@/lib/explore-catalog";
+import { CATEGORY_KEY, discoverParamsFromUrl, listingHref } from "@/lib/explore-discover";
+import { readCatalogFilters, type ExploreService } from "@/lib/explore-catalog";
+import { FILTER_KEYS, readExploreRefine, refineCards } from "@/lib/explore-refine";
+import { ExploreFilterBar } from "./explore-filter-bar";
+import { ExploreResults, ExploreSectionHeader } from "./explore-results";
+import { ServicePicker } from "./service-picker";
 import styles from "./explore.module.css";
+import layout from "./explore-layout.module.css";
 
 type Modal =
   | { kind: "destination"; place: ExploreDestination }
@@ -70,22 +64,15 @@ type Props = {
   initialGuides?: DiscoveryListing[];
   initialTours?: DiscoveryListing[];
 };
-const SEARCH_HINT = {
-  transport: "Search vehicles, operators or routes…",
-  hotels: "Search hotels or destinations…",
-  tours: "Search tours or destinations…",
-  guides: "Search guides or places…",
-  restaurants: "Search restaurants or cuisine…",
-} as const;
 const ROAD_PLANS = [
   {
-    label: "ALT: 4,173 m",
+    label: "ALT. 4,173 m",
     title: "Babusar Pass",
     body: "Confirm seasonal opening, departure time, and the planned route with your provider before traveling.",
     note: "Ask about the KKH alternative",
   },
   {
-    label: "N–35 ARTERY",
+    label: "N-35 ARTERY",
     title: "KKH Lower Corridor",
     body: "Confirm your pickup point, road access, and journey duration before setting out along the Karakoram Highway.",
     note: "Check your operator’s route",
@@ -97,11 +84,24 @@ const ROAD_PLANS = [
     note: "Confirm local access guidance",
   },
   {
-    label: "ALT: 4,114 m",
+    label: "ALT. 4,114 m",
     title: "Deosai High Plateau",
     body: "Discuss seasonal access, weather preparation, and a suitable high-clearance vehicle with your local provider.",
     note: "Plan a suitable mountain vehicle",
   },
+];
+/** URL keys that only shape the listings; switching category or clearing drops them. */
+const LISTING_KEYS = [
+  ...FILTER_KEYS,
+  ...Object.values(CATEGORY_KEY),
+  "view",
+  "city",
+  "destination",
+  "checkIn",
+  "checkOut",
+  "adults",
+  "children",
+  "rooms",
 ];
 
 export function WebsiteExplore({
@@ -112,14 +112,13 @@ export function WebsiteExplore({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filters = readExploreFilters(
-    new URLSearchParams(searchParams.toString()),
-  );
+  const params = new URLSearchParams(searchParams.toString());
+  const filters = readExploreFilters(params);
+  const refine = readExploreRefine(params);
   const [modal, setModal] = useState<Modal | null>(null);
-  const catalogFilters = readCatalogFilters(
-    new URLSearchParams(searchParams.toString()),
-  );
-  const searchConstraints = readExploreSearch(new URLSearchParams(searchParams.toString()));
+  const catalogFilters = readCatalogFilters(params);
+  const service = catalogFilters.service;
+  const searchConstraints = readExploreSearch(params);
   const favorites = useSavedDestinations();
   const tripQuery = useQuery({
     queryKey: ["customer", "explore", "trips", searchConstraints.trip],
@@ -147,6 +146,11 @@ export function WebsiteExplore({
     staleTime: 30000,
   });
   const trips = bookableTrips(tripQuery.data ?? []).filter(trip => matchesExploreJourney(trip, searchConstraints, vehicleCategory(trip)));
+  // Vehicle cards are trips: this lets a card show its seats, trip type and pickup point.
+  const tripsById = useMemo(
+    () => new Map((tripQuery.data ?? []).map((trip) => [trip.id, trip] as const)),
+    [tripQuery.data],
+  );
   const verifiedPlaces = [
     ...(hotelQuery.data ?? [])
       .filter((hotel) => hotel.isVerified)
@@ -163,14 +167,14 @@ export function WebsiteExplore({
         destination.region === filters.region &&
         destinationMatches(destination, place),
     );
-  // The catalog (cards, sort and filter chips, categories) comes from GET /api/discover.
-  const { base: discoverBase, category: discoverCategory } = discoverParamsFromUrl(
-    new URLSearchParams(searchParams.toString()),
-  );
+  // The catalog (cards, categories, server-side filters) comes from GET /api/discover.
+  const { base: discoverBase, category: discoverCategory } = discoverParamsFromUrl(params);
   const discoverQuery = useQuery({
     queryKey: ["customer", "explore", "discover", discoverBase, discoverCategory],
     queryFn: () => getDiscover({ ...discoverBase, category: discoverCategory }),
     staleTime: 30000,
+    // Keep the current cards on screen while new filters load: no flash, no layout shift.
+    placeholderData: keepPreviousData,
   });
   // If the default sub-type (e.g. "Hotels") has no listings, show the first one that does.
   const availableCategories = discoverQuery.data?.options.categories ?? [];
@@ -188,6 +192,19 @@ export function WebsiteExplore({
   });
   const activeDiscover = fallbackCategory ? fallbackQuery : discoverQuery;
   const discoverData = activeDiscover.data;
+  // A previous answer for another category must not show under this one.
+  const freshData = discoverData && discoverData.service === service ? discoverData : undefined;
+  // Price range, rating, map area and the extra sorts are applied here (the API has no such parameters).
+  const cards = refineCards(
+    (freshData?.items ?? []).filter((card) => matchesRegion(card.city)),
+    refine,
+  );
+  const stayParams = new URLSearchParams();
+  for (const key of ["checkIn", "checkOut", "adults", "children", "rooms"]) {
+    const value = params.get(key);
+    if (value) stayParams.set(key, value);
+  }
+
   const selectedPlace = modal?.kind === "destination" ? modal.place : undefined;
   const selectedInventory = selectedPlace
     ? destinationInventory(selectedPlace, trips)
@@ -207,6 +224,8 @@ export function WebsiteExplore({
         destinationMatches(selectedPlace, tour.destination),
       )
     : [];
+  const replace = (next: URLSearchParams) =>
+    router.replace(`/explore${next.size ? `?${next}` : ""}`, { scroll: false });
   const updateFilters = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams.toString());
     for (const [key, value] of Object.entries(patch)) {
@@ -219,13 +238,14 @@ export function WebsiteExplore({
         next.delete(key);
       else next.set(key, value);
     }
-    router.replace(`/explore${next.size ? `?${next}` : ""}`, { scroll: false });
+    replace(next);
   };
-  const search = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    updateFilters({
-      q: String(new FormData(event.currentTarget).get("q") ?? "").trim(),
-    });
+  /** Drop every listing filter; keep the category and the destination filters. */
+  const clearListingFilters = (nextService: ExploreService = service) => {
+    const next = new URLSearchParams(searchParams.toString());
+    for (const key of LISTING_KEYS) next.delete(key);
+    next.set("service", nextService);
+    replace(next);
   };
   const clearFilters = () => router.replace("/explore", { scroll: false });
   const openRoads = () => setModal({ kind: "roads" });
@@ -235,7 +255,7 @@ export function WebsiteExplore({
       : modal?.kind === "listing"
         ? modal.listing.name
         : modal?.kind === "filters"
-          ? "Explore filters"
+          ? "Filter destinations"
           : "Plan your mountain route";
   const searchTripsHref = (place: ExploreDestination) => {
     const trip = destinationInventory(place, trips).cheapest;
@@ -247,195 +267,127 @@ export function WebsiteExplore({
     });
   };
 
+  // "What are you looking for?" — every time Explore opens without a service already chosen
+  // (e.g. from the header link, not from a Home search). Decided once per visit to the page,
+  // so changing filters afterwards never brings it back.
+  const [picker, setPicker] = useState<null | "choose" | "locating">(() =>
+    searchParams.has("service") ? null : "choose",
+  );
+  const closePicker = () => setPicker(null);
+
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.intro} aria-labelledby="explore-title">
-          <div className={styles.toolbar}>
-            <div className={styles.toolbarTop}>
-              <div>
-                <h1 id="explore-title">Explore the north</h1>
-                <p className={styles.lead}>
-                  Rides, stays, tours, guides and restaurants.
-                </p>
-              </div>
-              <ExploreServiceSelector
-                filters={catalogFilters}
-                update={updateFilters}
-              />
-            </div>
-            <form className={styles.searchBar} onSubmit={search}>
-              <Compass size={19} />
-              <input
-                key={`${catalogFilters.service}-${filters.query}`}
-                name="q"
-                defaultValue={filters.query}
-                aria-label="Search Explore"
-                placeholder={SEARCH_HINT[catalogFilters.service]}
-                maxLength={160}
-              />
-              <button
-                type="button"
-                className={styles.filterButton}
-                onClick={() => setModal({ kind: "filters" })}
-              >
-                <SlidersHorizontal size={15} />
-                <span className={styles.filterLabel}>Filters</span>
-              </button>
-              <button type="submit" className={styles.primary}>
-                <Search size={16} />
-                Search
-              </button>
-            </form>
-            <div className={styles.toolbarFilters}>
-              <ExploreDiscoverFilters
-                filters={catalogFilters}
-                data={discoverData}
-                selectedCategory={discoverData?.applied.category ?? null}
-                update={updateFilters}
-              />
-              {searchParams.size > 0 && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className={styles.clear}
-                >
-                  Reset all
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
+    <div className={`${layout.page} ${styles.page} ${layout.legacyReset}`}>
+      {picker && (
+        <ServicePicker
+          startWith={picker}
+          onClose={closePicker}
+          onPick={(next) => {
+            closePicker();
+            clearListingFilters(next);
+          }}
+        />
+      )}
+      <div className={layout.container}>
+        <header className={layout.intro}>
+          <h1>Explore Gilgit-Baltistan</h1>
+          <p>Rides, stays, tours, guides and restaurants across the northern valleys.</p>
+        </header>
+      </div>
 
-        <section className={styles.hero} aria-labelledby="featured-title">
-          <HomeImage
-            src="/explore/hunza-expedition.jpg"
-            alt="Autumn landscape in Hunza Valley"
-            eager
-          />
-          <div className={styles.heroContent}>
-            <div className={styles.heroBadges}>
-              <span>NORTHERN ESCAPES</span>
-              <span>
-                <Mountain size={15} />
-                Karakoram valleys & mountain stays
-              </span>
-            </div>
-            <h2 id="featured-title">Hunza Valley Autumn Expedition</h2>
-            <p>
-              Golden poplar season, mountain terraces, turquoise waters, and
-              ancient silk-route hospitality. Discover your next journey through
-              the Karakoram basin.
-            </p>
-            <div className={styles.heroActions}>
-              <button
-                type="button"
-                className={styles.primary}
-                onClick={() =>
-                  setModal({
-                    kind: "destination",
-                    place: EXPLORE_DESTINATIONS[0],
-                  })
-                }
-              >
-                View Transit Links & Stays
-                <ArrowRight size={17} />
-              </button>
-              <button
-                type="button"
-                className={styles.secondary}
-                onClick={openRoads}
-              >
-                <TriangleAlert size={17} />
-                Check Road Advisory
-              </button>
-            </div>
-          </div>
-        </section>
+      <ExploreFilterBar
+        service={service}
+        params={params}
+        query={filters.query}
+        options={freshData?.options}
+        selectedCategory={freshData?.applied.category ?? null}
+        update={updateFilters}
+        replace={replace}
+        clearAll={() => clearListingFilters()}
+        matchesRegion={matchesRegion}
+      />
 
-        {((catalogFilters.service === "transport" && searchConstraints.hasTripSearch) || (catalogFilters.service === "hotels" && searchConstraints.hasHotelSearch)) && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4" role="status">
-            <p>{catalogFilters.service === "hotels"
-              ? [searchConstraints.hotel.destination, searchConstraints.hotel.checkIn, searchConstraints.hotel.checkOut, `${searchConstraints.hotel.adults + searchConstraints.hotel.children} guests`].filter(Boolean).join(" · ")
-              : [searchConstraints.trip.from, searchConstraints.trip.to, searchConstraints.trip.date, `${searchConstraints.trip.passengers} travelers`].filter(Boolean).join(" · ")}</p>
-            <button type="button" className={styles.secondary} onClick={() => router.replace(`/explore?service=${catalogFilters.service}`)}>Clear search</button>
-          </div>
-        )}
-        <div className={styles.split}>
-          <aside className={styles.splitMap} aria-label="Map">
-            <ExploreMapPreview
-              tall
-              base={discoverBase}
-              category={fallbackCategory ?? discoverCategory}
-              href={`/explore/map${searchParams.size ? `?${searchParams}` : ""}`}
-            />
-          </aside>
-          <div className={styles.splitMain}>
-        <ExploreDiscoverResults
-          filters={catalogFilters}
-          data={discoverData}
-          loading={activeDiscover.isPending}
-          error={activeDiscover.isError}
+      <div className={layout.container}>
+        <ExploreResults
+          service={service}
+          view={refine.view}
+          cards={cards}
+          trips={tripsById}
+          loading={!freshData && !activeDiscover.isError}
+          error={activeDiscover.isError && !freshData}
           retry={() => {
             void activeDiscover.refetch();
           }}
-          clear={() => {
-            router.replace(`/explore?service=${catalogFilters.service}`, {
-              scroll: false,
-            });
-          }}
-          matchesRegion={matchesRegion}
+          clear={() => clearListingFilters()}
+          hrefFor={(card) => listingHref(card, stayParams)}
+          area={refine.bbox}
+          update={updateFilters}
+          switchService={(next) => clearListingFilters(next)}
+          onNearMe={() => setPicker("locating")}
+          fullMapHref={`/explore/map${searchParams.size ? `?${searchParams}` : ""}`}
         />
-        {catalogFilters.service === "transport" &&
-          !activeDiscover.isPending &&
-          !activeDiscover.isError && (
-            <TransporterCards
-              trips={trips.filter(
-                (trip) =>
-                  matchesRegion(trip.to) &&
-                  catalogMatches(
-                    filters.query,
-                    trip.vehicleName,
-                    trip.vehicleType,
-                    trip.agency.name,
-                    trip.from,
-                    trip.to,
-                  ),
-              )}
-            />
-          )}
-          </div>
-        </div>
 
-        <section
-          className={styles.destinations}
-          aria-label="Curated destinations"
-        >
-          <div className={styles.sectionTop}>
-            <SectionHeading
-              eyebrow="NORTHERN CORRIDORS"
-              title="Curated Alpine Destinations & Waypoints"
-              description=""
-            />
-            <label className={styles.sort}>
-              <span>
-                Displaying {destinations.length}{" "}
-                {destinations.length === 1 ? "valley" : "valleys"}
-              </span>
-              <ArrowUpDown size={15} />
-              <select
-                aria-label="Sort destinations"
-                value={filters.sort}
-                onChange={(event) =>
-                  updateFilters({ sort: event.target.value })
-                }
+        <section className={layout.promo} aria-labelledby="featured-title">
+          <HomeImage src="/explore/hunza-expedition.jpg" alt="Autumn landscape in Hunza Valley" />
+          <div className={layout.promoContent}>
+            <span className={layout.promoBadge}>
+              <Mountain size={14} aria-hidden="true" />
+              Northern escapes
+            </span>
+            <h2 id="featured-title">Hunza Valley Autumn Expedition</h2>
+            <p>
+              Golden poplar season, mountain terraces, turquoise waters and
+              silk-route hospitality in the Karakoram.
+            </p>
+            <div className={layout.promoActions}>
+              <button
+                type="button"
+                className={layout.primaryButton}
+                onClick={() => setModal({ kind: "destination", place: EXPLORE_DESTINATIONS[0] })}
               >
-                <option value="featured">Featured</option>
-                <option value="name">Name A–Z</option>
-                <option value="price">Transit fare: low to high</option>
-              </select>
-            </label>
+                View rides & stays
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+              <button type="button" className={layout.secondaryButton} onClick={openRoads}>
+                <TriangleAlert size={16} aria-hidden="true" />
+                Road advisory
+              </button>
+            </div>
           </div>
+        </section>
+
+        <section className={layout.section} aria-labelledby="destinations-heading">
+          <ExploreSectionHeader
+            id="destinations-heading"
+            eyebrow="Northern corridors"
+            title="Popular destinations"
+          >
+            <span className={layout.count}>
+              Displaying <strong>{destinations.length}</strong>{" "}
+              {destinations.length === 1 ? "valley" : "valleys"}
+            </span>
+            <button
+              type="button"
+              className={layout.chip}
+              onClick={() => setModal({ kind: "filters" })}
+              aria-pressed={filters.region !== "all" || filters.maxAltitude < 5000 || Number.isFinite(filters.maxPrice)}
+            >
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              Filter
+            </button>
+            <ChipDropdown
+              label="Sort destinations"
+              align="end"
+              icon={<ArrowUpDown size={16} aria-hidden="true" />}
+              value={filters.sort}
+              active={filters.sort !== "featured"}
+              onChange={(value) => updateFilters({ sort: value })}
+              options={[
+                { value: "featured", label: "Featured", hint: "Our picks first", icon: <Sparkles size={16} aria-hidden="true" /> },
+                { value: "name", label: "Name A–Z", hint: "Alphabetical", icon: <ArrowDownAZ size={16} aria-hidden="true" /> },
+                { value: "price", label: "Lowest fare", hint: "Cheapest rides first", icon: <ArrowUpNarrowWide size={16} aria-hidden="true" /> },
+              ]}
+            />
+          </ExploreSectionHeader>
           {tripQuery.isError && (
             <div className={styles.notice} role="status">
               Transport availability could not be refreshed.{" "}
@@ -450,7 +402,7 @@ export function WebsiteExplore({
             </div>
           )}
           {destinations.length ? (
-            <div className={styles.destinationGrid}>
+            <div className={layout.destinationGrid}>
               {destinations.map((destination) => (
                 <DestinationCard
                   key={destination.id}
@@ -466,40 +418,39 @@ export function WebsiteExplore({
               ))}
             </div>
           ) : (
-            <HomeState
-              title="No valleys match these filters"
-              description="Try another region or clear your filters to see all six destinations."
-              retry={clearFilters}
-              retryLabel="Clear filters"
-            />
+            <div className={layout.state}>
+              <h3>No valleys match these filters</h3>
+              <p>Try another region or clear your filters to see all six destinations.</p>
+              <button type="button" className={layout.primaryButton} onClick={clearFilters}>
+                Clear filters
+              </button>
+            </div>
           )}
         </section>
 
-        <section className={styles.roadTracker} aria-labelledby="road-heading">
-          <div className={styles.roadHeading}>
-            <div>
-              <p>
-                <Navigation size={19} />
-                MOUNTAIN ROUTE PLANNING
-              </p>
-              <h2 id="road-heading">
-                Mountain Pass & Arterial Road Information
-              </h2>
-            </div>
-            <span>Confirm live conditions before departure</span>
-          </div>
-          <div className={styles.roadGrid}>
+        <section className={layout.section} aria-labelledby="road-heading">
+          <ExploreSectionHeader
+            id="road-heading"
+            eyebrow="Mountain route planning"
+            title="Mountain passes & road information"
+          >
+            <span className={layout.hidePhone}>Confirm live conditions before departure</span>
+          </ExploreSectionHeader>
+          <div className={layout.passGrid}>
             {ROAD_PLANS.map((road) => (
-              <article key={road.title}>
-                <div>
+              <article key={road.title} className={layout.pass}>
+                <div className={layout.passTop}>
                   <small>{road.label}</small>
-                  <span className={styles.unknown}>CHECK ACCESS</span>
+                  <span className={layout.status}>
+                    <TriangleAlert size={12} aria-hidden="true" />
+                    Check access
+                  </span>
                 </div>
                 <h3>{road.title}</h3>
                 <p>{road.body}</p>
                 <button type="button" onClick={openRoads}>
                   {road.note}
-                  <ArrowRight size={13} />
+                  <ArrowRight size={15} aria-hidden="true" />
                 </button>
               </article>
             ))}
