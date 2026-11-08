@@ -198,7 +198,7 @@ function RequestView({ id }: { id: string }) {
               </p>
             )}
             <p className={s.fine}>
-              Prices are before tax and service fee. This request closes at {formatPakistanTime(r.expiresAt)} if no driver is
+              Prices are what you pay the driver. This request closes at {formatPakistanTime(r.expiresAt)} if no driver is
               chosen.
             </p>
           </section>

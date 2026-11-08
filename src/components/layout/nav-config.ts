@@ -20,6 +20,7 @@ import {
   Star,
   Ticket,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -61,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Routes", href: "/admin/transport/routes", icon: Route },
       { label: "Pickup Points", href: "/admin/transport/pickup-points", icon: MapPin },
       { label: "Trips", href: "/admin/transport/trips", icon: CalendarClock },
+      { label: "City to City Commission", href: "/admin/transport/commission", icon: Wallet },
     ],
   },
   {

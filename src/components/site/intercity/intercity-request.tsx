@@ -507,14 +507,19 @@ function RideForm({ config }: { config: EnabledIntercityConfig }) {
                     <dd>{formatRupees(line.amount)}</dd>
                   </div>
                 ))}
-                <div>
-                  <dt>Tax</dt>
-                  <dd>{formatRupees(fare.tax)}</dd>
-                </div>
-                <div>
-                  <dt>Service fee</dt>
-                  <dd>{formatRupees(fare.serviceFee)}</dd>
-                </div>
+                {/* City to City riders pay the fare only; shown only if the server ever adds them. */}
+                {fare.tax > 0 ? (
+                  <div>
+                    <dt>Tax</dt>
+                    <dd>{formatRupees(fare.tax)}</dd>
+                  </div>
+                ) : null}
+                {fare.serviceFee > 0 ? (
+                  <div>
+                    <dt>Service fee</dt>
+                    <dd>{formatRupees(fare.serviceFee)}</dd>
+                  </div>
+                ) : null}
               </dl>
               <div className={s.priceLine}>
                 <span>Total</span>
@@ -523,13 +528,13 @@ function RideForm({ config }: { config: EnabledIntercityConfig }) {
               {fare.bidAllowed ? (
                 <div className={s.options} role="radiogroup" aria-label="Fare">
                   <Choice name="fare" checked={fareMode === "fixed"} onSelect={() => setFareChoice("fixed")} icon={Check} title="Request at this fare" hint="Drivers accept this price." />
-                  <Choice name="fare" checked={fareMode === "bid"} onSelect={() => setFareChoice("bid")} icon={Banknote} title="Offer your own price" hint={`At least ${formatRupees(floor)} before tax and fee.`} />
+                  <Choice name="fare" checked={fareMode === "bid"} onSelect={() => setFareChoice("bid")} icon={Banknote} title="Offer your own price" hint={`At least ${formatRupees(floor)}.`} />
                 </div>
               ) : null}
               {fareMode === "bid" ? (
                 <div className={x.fields}>
                   <label className={x.wide}>
-                    Your offer (Rs, before tax and fee)
+                    Your offer (Rs)
                     <input
                       type="number"
                       inputMode="numeric"

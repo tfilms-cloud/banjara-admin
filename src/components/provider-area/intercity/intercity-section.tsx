@@ -28,6 +28,7 @@ import {
   type DriverUpcomingTrip,
 } from "@/services/customer/intercity.service";
 import { LocationSharer } from "./location-sharer";
+import { CommissionBalance } from "./commission-balance";
 import s from "../sections/sections.module.css";
 import c from "./intercity.module.css";
 
@@ -131,6 +132,7 @@ function Board({ optedIn, onUnderway }: { optedIn: boolean; onUnderway: (ids: st
   const data = useQuery({ queryKey: REQUESTS_KEY, queryFn: getDriverRideRequests, refetchInterval: 10_000 });
   const requests = data.data?.requests ?? [];
   const upcoming = data.data?.upcoming ?? [];
+  const balance = data.data?.balance ?? null;
   // Only a real answer from the server changes which trips share location.
   const underwayIds = data.isSuccess
     ? upcoming.filter((t) => t.status === "departed" || t.status === "inTransit").map((t) => t.tripId).join(",")
@@ -156,6 +158,12 @@ function Board({ optedIn, onUnderway }: { optedIn: boolean; onUnderway: (ids: st
           </span>
         </p>
       ) : null}
+      {balance?.blocked ? (
+        <p className={s.error} role="alert">
+          {balance.message ?? "Pay your BANJARA commission to take new City to City rides."}{" "}
+          <a href="#commission">See how to pay</a>
+        </p>
+      ) : null}
 
       <section className={s.card} aria-labelledby="ic-requests">
         <h3 id="ic-requests" className={s.cardTitle}>
@@ -174,8 +182,12 @@ function Board({ optedIn, onUnderway }: { optedIn: boolean; onUnderway: (ids: st
         ) : (
           <div className={s.empty}>
             <Inbox size={26} />
-            <strong>No requests right now</strong>
-            <span>New requests on your routes appear here. This list refreshes on its own.</span>
+            <strong>{balance?.blocked ? "Requests are paused" : "No requests right now"}</strong>
+            <span>
+              {balance?.blocked
+                ? "Pay your BANJARA commission below and new requests start again once it's confirmed."
+                : "New requests on your routes appear here. This list refreshes on its own."}
+            </span>
           </div>
         )}
       </section>
@@ -194,6 +206,8 @@ function Board({ optedIn, onUnderway }: { optedIn: boolean; onUnderway: (ids: st
           <p className={c.muted}>When a traveller chooses your offer, the ride appears here.</p>
         )}
       </section>
+
+      <CommissionBalance />
     </div>
   );
 }

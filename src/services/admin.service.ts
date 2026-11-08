@@ -1,4 +1,4 @@
-import { get, put } from "@/lib/api";
+import { get, post, put } from "@/lib/api";
 import { asArray } from "@/lib/utils";
 import type {
   AdminDashboard,
@@ -192,6 +192,46 @@ export async function listPayments() {
 export async function getPayment(id: string) {
   return get<PaymentRecord>(`/admin/payments/${id}`);
 }
+
+/* City to City commission: payments drivers report, and the commission rules. */
+export type CommissionPayment = {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  amount: number;
+  createdAt: string;
+  channel: string | null;
+  reference: string | null;
+  note: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  providerId: string;
+  driverName: string;
+  driverPhone: string | null;
+  driverOwed: number;
+  driverBlocked: boolean;
+};
+
+export type CommissionSettings = {
+  commissionPercent: number;
+  maxDriverDue: number;
+  maxDueDays: number;
+  collectionAccounts: Array<{ channel: string; accountTitle: string; accountNumber: string; note?: string }>;
+};
+
+export async function listCommissionPayments(status: "pending" | "approved" | "rejected" | "all") {
+  return asArray<CommissionPayment>(await get("/admin/intercity/commission/payments", { params: { status } }));
+}
+
+export const approveCommissionPayment = (id: string) =>
+  post<CommissionPayment>(`/admin/intercity/commission/payments/${encodeURIComponent(id)}/approve`, {});
+
+export const rejectCommissionPayment = (id: string, reason: string) =>
+  post<CommissionPayment>(`/admin/intercity/commission/payments/${encodeURIComponent(id)}/reject`, { reason });
+
+export const getCommissionSettings = () => get<CommissionSettings>("/admin/intercity/commission/settings");
+
+export const saveCommissionSettings = (input: Partial<CommissionSettings>) =>
+  put<CommissionSettings>("/admin/intercity/commission/settings", input);
 
 export async function listReviews() {
   return asArray<ReviewRecord>(await get("/admin/reviews"));

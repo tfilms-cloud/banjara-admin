@@ -260,12 +260,59 @@ export const getDriverIntercitySettings = () => customerGet<DriverIntercitySetti
 export const saveDriverIntercitySettings = (input: DriverIntercitySettingsInput) =>
   customerPut<DriverIntercitySettings>("/intercity/driver/settings", input);
 
-export async function getDriverRideRequests(): Promise<{ requests: DriverRideRequest[]; upcoming: DriverUpcomingTrip[] }> {
-  const data = await customerGet<{ requests?: DriverRideRequest[]; upcoming?: DriverUpcomingTrip[] } | null>(
-    "/intercity/driver/requests",
-  );
-  return { requests: data?.requests ?? [], upcoming: data?.upcoming ?? [] };
+/** What the driver owes BANJARA (shown on the requests board; blocked drivers get no requests). */
+export type DriverBalanceBanner = {
+  owed: number;
+  pendingPayments: number;
+  blocked: boolean;
+  message: string | null;
+  maxDriverDue: number;
+  commissionPercent: number;
+};
+
+export async function getDriverRideRequests(): Promise<{
+  requests: DriverRideRequest[];
+  upcoming: DriverUpcomingTrip[];
+  balance: DriverBalanceBanner | null;
+}> {
+  const data = await customerGet<{
+    requests?: DriverRideRequest[];
+    upcoming?: DriverUpcomingTrip[];
+    balance?: DriverBalanceBanner;
+  } | null>("/intercity/driver/requests");
+  return { requests: data?.requests ?? [], upcoming: data?.upcoming ?? [], balance: data?.balance ?? null };
 }
+
+export type PayChannel = "easypaisa" | "jazzcash" | "bank" | "raast" | "other";
+
+export type LedgerEntry = {
+  id: string;
+  kind: "commission" | "payment";
+  status: "posted" | "pending" | "approved" | "rejected";
+  amount: number;
+  createdAt: string;
+  bookingNumber: string | null;
+  fare: number | null;
+  percent: number | null;
+  route: string | null;
+  channel: PayChannel | null;
+  reference: string | null;
+  rejectionReason: string | null;
+};
+
+export type DriverBalance = DriverBalanceBanner & {
+  dueSince: string | null;
+  blockReason: "over_limit" | "overdue" | null;
+  maxDueDays: number;
+  payTo: Array<{ channel: PayChannel; accountTitle: string; accountNumber: string; note?: string }>;
+  entries: LedgerEntry[];
+};
+
+/** BANJARA's 10% commission on completed City to City rides, owed by the driver. */
+export const getDriverBalance = () => customerGet<DriverBalance>("/intercity/driver/balance");
+
+export const reportCommissionPayment = (input: { amount: number; channel: PayChannel; reference: string; note?: string }) =>
+  customerPost<LedgerEntry>("/intercity/driver/balance/payments", input);
 
 export const respondToRideRequest = (requestId: string, action: "accept" | "decline" | "counter", amount?: number) =>
   customerPost<unknown>(`/intercity/driver/requests/${id(requestId)}/respond`, {
