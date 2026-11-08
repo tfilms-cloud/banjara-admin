@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   CalendarClock,
+  Car,
   ChevronLeft,
   Crosshair,
   List,
@@ -22,6 +23,8 @@ import {
   ExploreServiceSelector,
 } from "@/components/site/explore/service-catalog";
 import { useDiscoverMap } from "@/hooks/use-discover-map";
+import { useQuery } from "@/lib/live-query";
+import { getDrivingRoute } from "@/services/customer/directions.service";
 import { discoverParamsFromUrl, listingHref } from "@/lib/explore-discover";
 import { directionsUrl } from "@/lib/map-config";
 import { NEAR_MAX_KM, nearBounds, readNearMe } from "@/lib/near-me";
@@ -117,6 +120,16 @@ export function ExploreMapPage() {
     [data],
   );
   const selected = pins.find((pin) => pin.id === picked) ?? null;
+  // Near me: road distance, drive time and route from the visitor to the selected pickup.
+  const routeTo = near && selected ? selected.location : null;
+  const directions = useQuery({
+    queryKey: ["directions", near?.lat, near?.lng, routeTo?.lat, routeTo?.lng],
+    queryFn: () => getDrivingRoute({ lat: near!.lat, lng: near!.lng }, { lat: routeTo!.lat, lng: routeTo!.lng }),
+    enabled: !!near && !!routeTo,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+  const road = routeTo ? (directions.data ?? null) : null;
 
   const backHref = `/explore${filterKey ? `?${filterKey}` : ""}`;
   const stay = new URLSearchParams();
@@ -191,6 +204,8 @@ export function ExploreMapPage() {
           onUserMove={(box) => setPending({ key: filterKey, box })}
           locateToken={locateToken}
           nearby={near}
+          drivingPath={road?.path ?? null}
+          showTripRoute={!near}
           ariaLabel={`Map of ${NOUN[service]}`}
         />
       </div>
@@ -277,10 +292,29 @@ export function ExploreMapPage() {
                 {selected.subtitle && <p className={styles.sub}>{selected.subtitle}</p>}
 
                 <div className={styles.facts}>
+                  {near ? (
+                    <div className={styles.fact}>
+                      <Car size={18} aria-hidden="true" />
+                      <div>
+                        <small>From you to the pickup</small>
+                        <strong aria-live="polite">
+                          {road
+                            ? `${road.distanceKm} km by road · about ${road.durationMin} min drive`
+                            : directions.isFetching
+                              ? "Working out the road distance…"
+                              : selected.distanceKm !== undefined
+                                ? `${selected.distanceKm < 1 ? "Under 1" : selected.distanceKm} km away (straight line)`
+                                : "Distance unavailable"}
+                        </strong>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className={styles.fact}>
                     <MapPin size={18} aria-hidden="true" />
                     <div>
-                      <small>{selected.location.approximate ? "Area" : "Address"}</small>
+                      <small>
+                        {selected.location.approximate ? "Area" : selected.service === "transport" ? "Pickup" : "Address"}
+                      </small>
                       <strong>{selected.location.address}</strong>
                     </div>
                   </div>

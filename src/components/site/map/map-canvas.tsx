@@ -41,6 +41,10 @@ type Props = {
   locateToken?: number;
   /** "Near me": draw the visitor's position and the search radius. */
   nearby?: { lat: number; lng: number; radiusKm: number } | null;
+  /** Road route to draw ([lat, lng] points), e.g. visitor → selected ride's pickup; the map frames it. */
+  drivingPath?: Array<[number, number]> | null;
+  /** Draw a selected ride's own trip line (origin → destination). Off in "near me". */
+  showTripRoute?: boolean;
   ariaLabel?: string;
 };
 
@@ -108,6 +112,8 @@ export default function MapCanvas({
   onUserMove,
   locateToken = 0,
   nearby = null,
+  drivingPath = null,
+  showTripRoute = true,
   ariaLabel = "Map of listings",
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -294,6 +300,7 @@ export default function MapCanvas({
     const route = entry.card.route;
     // A ride that starts and ends in the same place has no line worth drawing.
     const hasRoute =
+      showTripRoute &&
       !!route &&
       Math.abs(route.from.lat - route.to.lat) + Math.abs(route.from.lng - route.to.lng) > 0.02;
     if (route && hasRoute) {
@@ -341,7 +348,37 @@ export default function MapCanvas({
         instance.panBy(target.subtract(middle), { animate: true });
       });
     }
-  }, [selectedId, pins]);
+  }, [selectedId, pins, showTripRoute]);
+
+  // 4b. a road route (e.g. "near me": from the visitor to the selected ride's pickup)
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !drivingPath || drivingPath.length < 2) return;
+    const layer = L.layerGroup().addTo(instance);
+    // A white casing under the line keeps it readable over busy map tiles.
+    L.polyline(drivingPath, { color: "#ffffff", weight: 9, opacity: 0.9, interactive: false }).addTo(layer);
+    const line = L.polyline(drivingPath, {
+      color: "#1a73e8",
+      weight: 5,
+      opacity: 0.95,
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false,
+    }).addTo(layer);
+    programmatic();
+    const room = live.current.inset ?? { top: 0, left: 0, right: 0, bottom: 0 };
+    instance.fitBounds(line.getBounds(), {
+      paddingTopLeft: [room.left + 60, room.top + 60],
+      paddingBottomRight: [room.right + 60, room.bottom + 60],
+      maxZoom: 15,
+      // Instant: an animated zoom outlasts the "programmatic" window and would look like the
+      // visitor moved the map (showing "Search this area").
+      animate: false,
+    });
+    return () => {
+      layer.remove();
+    };
+  }, [drivingPath]);
 
   // 5. hover highlight (list ↔ map)
   const hovered = useRef<string | null>(null);
