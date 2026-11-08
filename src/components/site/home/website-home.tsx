@@ -53,7 +53,7 @@ import {
   HomeState,
   SectionHeading,
 } from "./home-primitives";
-import { HomeRideCard } from "./home-ride-card";
+import { HomeCityToCityLink, HomeRideCard } from "./home-ride-card";
 import { HomeStories } from "./home-stories";
 import styles from "./home.module.css";
 
@@ -336,6 +336,7 @@ export function WebsiteHome({
                   >
                     Customise route
                   </button>
+                  <HomeCityToCityLink />
                 </div>
               )}
             </div>

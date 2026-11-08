@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, KeyRound, LoaderCircle, LogOut, Monitor, Pencil, ShieldCheck, Smartphone, UserRound } from "lucide-react";
+import { Bell, KeyRound, LoaderCircle, LogOut, Monitor, Pencil, Plus, Route, ShieldCheck, Smartphone, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
 import { validateNewPassword } from "@/lib/customer-profile";
@@ -21,6 +21,14 @@ import {
   signOutDevice,
 } from "@/services/customer/session.service";
 import type { NotificationPreferences } from "@/types/customer/profile";
+import {
+  getDriverIntercitySettings,
+  getIntercityCities,
+  saveDriverIntercitySettings,
+  type DriverIntercitySettings,
+  type DriverRoute,
+} from "@/services/customer/intercity.service";
+import { DRIVER_INTERCITY_SETTINGS_KEY, useIsTransportProvider } from "../intercity/intercity-section";
 import s from "../sections/sections.module.css";
 import st from "./settings.module.css";
 
@@ -32,6 +40,7 @@ export function SettingsSection() {
   return (
     <div className={s.page}>
       <AccountCard />
+      <IntercityCard />
       <div className={s.grid2}>
         <NotificationsCard />
         <PasswordCard />
@@ -311,6 +320,190 @@ function DevicesCard() {
           <LogOut size={15} /> {busy === "all" ? "Signing out…" : "Sign out of all devices"}
         </button>
       </div>
+    </section>
+  );
+}
+
+/** Drivers opt in to City to City requests: home city, preferred routes and shared rides. */
+function IntercityCard() {
+  const { isTransport } = useIsTransportProvider();
+  const settings = useQuery({
+    queryKey: DRIVER_INTERCITY_SETTINGS_KEY,
+    queryFn: getDriverIntercitySettings,
+    enabled: isTransport,
+  });
+  const show = isTransport && settings.data?.featureEnabled === true;
+  const cities = useQuery({ queryKey: ["intercity", "cities"], queryFn: getIntercityCities, enabled: show, staleTime: 5 * 60_000 });
+  if (!show || !settings.data) return null;
+  return <IntercityForm key={JSON.stringify(settings.data)} saved={settings.data} cities={cities.data ?? []} />;
+}
+
+function IntercityForm({
+  saved,
+  cities,
+}: {
+  saved: DriverIntercitySettings;
+  cities: Array<{ id: string; name: string; province: string }>;
+}) {
+  const client = useQueryClient();
+  const [enabled, setEnabled] = useState(saved.enabled);
+  const [homeCityId, setHomeCityId] = useState(saved.homeCityId ?? "");
+  const [routes, setRoutes] = useState<DriverRoute[]>(saved.preferredRoutes);
+  const [acceptsShared, setAcceptsShared] = useState(saved.acceptsShared);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [error, setError] = useState("");
+  const cityName = (id: string) => cities.find((c) => c.id === id)?.name ?? "Unknown city";
+
+  const save = useMutation({
+    mutationFn: () =>
+      saveDriverIntercitySettings({
+        enabled,
+        homeCityId: homeCityId || null,
+        preferredRoutes: routes,
+        acceptsShared,
+      }),
+    onSuccess: (next) => {
+      client.setQueryData(DRIVER_INTERCITY_SETTINGS_KEY, next);
+      void client.invalidateQueries({ queryKey: ["provider", "intercity-requests"] });
+      toast.success("City to City settings saved");
+    },
+    onError: (failure) => setError(failure instanceof Error ? failure.message : "Could not save"),
+  });
+
+  const addRoute = () => {
+    setError("");
+    if (!from || !to) return setError("Choose both cities for the route.");
+    if (from === to) return setError("A route needs two different cities.");
+    if (routes.some((r) => r.fromCityId === from && r.toCityId === to)) return setError("That route is already on your list.");
+    if (routes.length >= 20) return setError("You can keep up to 20 routes.");
+    setRoutes([...routes, { fromCityId: from, toCityId: to }]);
+    setFrom("");
+    setTo("");
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    if (enabled && !homeCityId) return setError("Choose your home city to receive requests.");
+    save.mutate();
+  };
+  const busy = save.isPending;
+
+  return (
+    <section className={s.card}>
+      <CardTitle icon={Route} title="City to City rides" />
+      <p className={st.muted}>Get door-to-door ride requests between cities. Travellers pay you in cash.</p>
+      <form className={st.form} onSubmit={submit}>
+        <ul className={st.toggles}>
+          <li>
+            <div>
+              <strong>Receive City to City requests</strong>
+              <span>Requests starting in or near your home city</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              aria-label="Receive City to City requests"
+              className={`${st.switch} ${enabled ? st.switchOn : ""}`}
+              disabled={busy}
+              onClick={() => setEnabled(!enabled)}
+            >
+              <span />
+            </button>
+          </li>
+          <li>
+            <div>
+              <strong>Accept shared rides</strong>
+              <span>Travellers book single seats and share your vehicle</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={acceptsShared}
+              aria-label="Accept shared rides"
+              className={`${st.switch} ${acceptsShared ? st.switchOn : ""}`}
+              disabled={busy}
+              onClick={() => setAcceptsShared(!acceptsShared)}
+            >
+              <span />
+            </button>
+          </li>
+        </ul>
+        <label>
+          Home city
+          <select className={st.select} value={homeCityId} onChange={(e) => setHomeCityId(e.target.value)} disabled={busy}>
+            <option value="">Choose a city</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+                {city.province ? ` · ${city.province}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <fieldset className={st.routes}>
+          <legend>Preferred routes (optional)</legend>
+          {routes.length ? (
+            <ul>
+              {routes.map((route, index) => (
+                <li key={`${route.fromCityId}-${route.toCityId}`}>
+                  <span>
+                    {cityName(route.fromCityId)} → {cityName(route.toCityId)}
+                  </span>
+                  <button
+                    type="button"
+                    className={s.secondary}
+                    onClick={() => setRoutes(routes.filter((_, i) => i !== index))}
+                    aria-label={`Remove ${cityName(route.fromCityId)} to ${cityName(route.toCityId)}`}
+                    disabled={busy}
+                  >
+                    <X size={13} /> Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={st.muted}>No routes yet: you get requests from your home city.</p>
+          )}
+          <div className={st.routeAdd}>
+            <label>
+              From
+              <select className={st.select} value={from} onChange={(e) => setFrom(e.target.value)} disabled={busy}>
+                <option value="">City</option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              To
+              <select className={st.select} value={to} onChange={(e) => setTo(e.target.value)} disabled={busy}>
+                <option value="">City</option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className={s.secondary} onClick={addRoute} disabled={busy}>
+              <Plus size={14} /> Add route
+            </button>
+          </div>
+        </fieldset>
+        {error ? (
+          <p className={s.error} role="alert">
+            {error}
+          </p>
+        ) : null}
+        <button type="submit" className={s.primary} disabled={busy}>
+          {busy ? "Saving…" : "Save City to City settings"}
+        </button>
+      </form>
     </section>
   );
 }

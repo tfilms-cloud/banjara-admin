@@ -307,6 +307,21 @@
   background: #16b364;
   color: #fff;
 }
+.cityToCity {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 24px;
+  border: 1px solid #0f9b98;
+  color: #0f9b98;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.cityToCity:hover {
+  background: #e6f7f6;
+}
 .searchFields {
   display: grid;
   grid-template-columns:

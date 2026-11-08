@@ -29,8 +29,12 @@ import {
   BedDouble,
   LogIn,
   LogOut,
+  Navigation,
+  UserX,
 } from "lucide-react";
 import { pakistanDate } from "@/lib/home-discovery";
+import { directionsUrl } from "@/lib/map-config";
+import { markRideNoShow } from "@/services/customer/intercity.service";
 import { useQuery } from "@/lib/live-query";
 import {
   PAYMENT_ISSUES,
@@ -91,7 +95,7 @@ function stayDates(checkIn: string, checkOut: string) {
 export function BookingDetail({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<
-    "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout" | null
+    "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout" | "noshow" | null
   >(null);
   const [error, setError] = useState("");
   const booking = useQuery({
@@ -136,11 +140,16 @@ export function BookingDetail({ id }: { id: string }) {
     ["confirmed", "completed"].includes(x.status) &&
     x.paymentStatus !== "paid";
 
-  const act = async (next: "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout") => {
+  const ride = x.intercity;
+  // The API refuses (409, with the reason) until the no-show wait has passed.
+  const canNoShow = Boolean(ride && x.status === "confirmed");
+
+  const act = async (next: "confirmed" | "rejected" | "completed" | "cash" | "checkin" | "checkout" | "noshow") => {
     setError("");
     setBusy(next);
     try {
-      if (next === "completed") await completeBooking(x.id);
+      if (next === "noshow") await markRideNoShow(x.id);
+      else if (next === "completed") await completeBooking(x.id);
       else if (next === "cash") await markCashReceived(x.id);
       else if (next === "checkin") await checkInGuest(x.id);
       else if (next === "checkout") await checkOutGuest(x.id);
@@ -172,7 +181,13 @@ export function BookingDetail({ id }: { id: string }) {
           <p className={b.detailSub}>
             {stay
               ? `${stayDates(stay.checkIn, stay.checkOut)} · ${stay.nights} ${stay.nights === 1 ? "night" : "nights"} · ${stay.rooms} ${stay.rooms === 1 ? "room" : "rooms"} · ${stay.guests} ${stay.guests === 1 ? "guest" : "guests"}`
-              : `${tripWhen(x.tripDate, x.departureTime)} · ${x.seats.length ? `Seat ${x.seats.join(", ")}` : `${x.passengers.length} passenger(s)`}`}
+              : `${tripWhen(x.tripDate, x.departureTime)} · ${
+                  ride?.rideType === "full_car"
+                    ? `Full car · ${ride.passengers} ${ride.passengers === 1 ? "passenger" : "passengers"}`
+                    : x.seats.length
+                      ? `Seat ${x.seats.join(", ")}`
+                      : `${x.passengers.length} passenger(s)`
+                }`}
           </p>
         </div>
         <div className={b.detailRight}>
@@ -268,6 +283,17 @@ export function BookingDetail({ id }: { id: string }) {
                 Mark as completed
               </button>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {canNoShow ? (
+        <div className={b.actionBar}>
+          <span>Waited at the pickup and the traveller didn’t come? You can mark a no-show once the waiting time has passed.</span>
+          <div className={b.actions}>
+            <button type="button" className={b.decline} disabled={Boolean(busy)} onClick={() => void act("noshow")}>
+              {busy === "noshow" ? <LoaderCircle size={14} className="animate-spin" /> : <UserX size={14} />} Mark no-show
+            </button>
           </div>
         </div>
       ) : null}
@@ -370,6 +396,42 @@ export function BookingDetail({ id }: { id: string }) {
               ) : null}
             </Card>
 
+            {ride ? (
+              <Card icon={MapPin} title="Door-to-door">
+                <Row label="Pickup" value={ride.pickupAddress} />
+                <Row label="Drop-off" value={ride.dropoffAddress} />
+                <Row label="Ride" value={ride.rideType === "shared_seat" ? "Shared seat" : "Full car"} />
+                <Row label="Leg" value={ride.leg === "return" ? "Return" : ride.leg ? "Outbound" : ""} />
+                <Row label="Passengers" value={ride.passengers ? String(ride.passengers) : ""} />
+                <Row
+                  label="Luggage"
+                  value={`${ride.luggage.bags} ${ride.luggage.bags === 1 ? "bag" : "bags"}${ride.luggage.large ? `, ${ride.luggage.large} large` : ""}`}
+                />
+                {ride.notes ? <p className={b.muted}>Note: {ride.notes}</p> : null}
+                <div className={b.contact}>
+                  {ride.pickupLat != null && ride.pickupLng != null ? (
+                    <a href={directionsUrl(ride.pickupLat, ride.pickupLng)} target="_blank" rel="noreferrer" className={b.mini}>
+                      <Navigation size={13} /> Directions to pickup
+                    </a>
+                  ) : null}
+                  {ride.dropoffLat != null && ride.dropoffLng != null ? (
+                    <a href={directionsUrl(ride.dropoffLat, ride.dropoffLng)} target="_blank" rel="noreferrer" className={b.mini}>
+                      <Navigation size={13} /> Directions to drop-off
+                    </a>
+                  ) : null}
+                  {x.returnBookingId ? (
+                    <Link href={`/provider/bookings/${x.returnBookingId}`} className={b.mini}>
+                      Return booking
+                    </Link>
+                  ) : null}
+                  {x.outboundBookingId ? (
+                    <Link href={`/provider/bookings/${x.outboundBookingId}`} className={b.mini}>
+                      Outbound booking
+                    </Link>
+                  ) : null}
+                </div>
+              </Card>
+            ) : (
             <Card icon={MapPin} title="Pickup & drop-off">
               <Row label="Pickup" value={x.pickup} />
               <Row
@@ -387,6 +449,7 @@ export function BookingDetail({ id }: { id: string }) {
                 </p>
               ) : null}
             </Card>
+            )}
 
             <Card icon={Users} title="Seats & passengers">
               {x.seats.length ? (
@@ -449,6 +512,9 @@ export function BookingDetail({ id }: { id: string }) {
               </button>
             </div>
           ) : null}
+          {x.fareBreakdown?.lines.map((line) => (
+            <Row key={line.code} label={line.label} value={rupees(line.amount)} />
+          ))}
           <Row label="Subtotal" value={rupees(x.subtotal)} />
           <Row label="Tax" value={rupees(x.tax)} />
           <Row label="Service fee" value={rupees(x.serviceFee)} />

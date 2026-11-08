@@ -11,11 +11,25 @@ import {
   Zap,
 } from "lucide-react";
 import type { TripWithDetails } from "@/types/customer/trip";
+import { useQuery } from "@/lib/live-query";
+import { intercityConfigQuery } from "@/services/customer/intercity.service";
 import { timeLabel } from "@/lib/home-discovery";
 import { formatDuration } from "@/lib/customer-destinations";
 import { transportAgencyHref } from "@/lib/agency-discovery";
 import { HomeImage } from "./home-primitives";
 import styles from "./home.module.css";
+
+/** "City to City" door-to-door rides, offered beside the ride search once BANJARA turns them on. */
+export function HomeCityToCityLink() {
+  const config = useQuery(intercityConfigQuery);
+  if (!config.data?.enabled) return null;
+  return (
+    <Link href="/intercity" className={styles.cityToCity}>
+      <MapPin size={13} aria-hidden="true" />
+      City to City
+    </Link>
+  );
+}
 
 /** A trip at a glance: where, when, who, and how much — in that order. */
 export function HomeRideCard({

@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Route,
   Settings,
   Star,
   UserRound,
@@ -27,6 +28,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { useCustomerAuth } from "@/components/providers/customer-auth-provider";
 import { useQuery } from "@/lib/live-query";
 import { getProviderApplication } from "@/services/customer/auth.service";
+import { intercityConfigQuery } from "@/services/customer/intercity.service";
 import styles from "./provider-shell.module.css";
 
 type NavItem = {
@@ -38,7 +40,7 @@ type NavItem = {
 };
 
 /** Same sections as the app's provider side (tabs plus the "more" screens). */
-function navFor(isDriver: boolean, isHost: boolean): Array<{ title: string; items: NavItem[] }> {
+function navFor(isDriver: boolean, isHost: boolean, intercity: boolean): Array<{ title: string; items: NavItem[] }> {
   return [
     {
       title: "Main",
@@ -50,6 +52,7 @@ function navFor(isDriver: boolean, isHost: boolean): Array<{ title: string; item
               { href: "/provider/availability", label: "Availability", icon: CalendarRange },
             ]
           : [{ href: "/provider/trips", label: isDriver ? "My trips" : "My service", icon: CarFront }]),
+        ...(intercity ? [{ href: "/provider/intercity", label: "City to City", icon: Route }] : []),
         { href: "/provider/bookings", label: "Bookings", icon: CalendarCheck },
         { href: "/provider/earnings", label: "Earnings", icon: Wallet },
       ],
@@ -77,6 +80,7 @@ const TITLES: Record<string, string> = {
   "/provider": "Dashboard",
   "/provider/trips": "My trips",
   "/provider/rooms": "My rooms",
+  "/provider/intercity": "City to City",
   "/provider/availability": "Availability",
   "/provider/bookings": "Bookings",
   "/provider/earnings": "Earnings",
@@ -111,7 +115,10 @@ export function ProviderShell({ children }: { children: ReactNode }) {
   const approved = data?.verificationStatus === "approved";
   const isHost = Boolean(data?.services?.includes("hotel"));
   const isDriver = !isHost && (data?.services?.includes("transport") ?? true);
-  const groups = navFor(isDriver, isHost);
+  // City to City is for drivers, and only once BANJARA switches it on.
+  const intercityConfig = useQuery({ ...intercityConfigQuery, enabled: isProvider });
+  const showIntercity = Boolean(data?.services?.includes("transport")) && !isHost && intercityConfig.data?.enabled === true;
+  const groups = navFor(isDriver, isHost, showIntercity);
 
   // Close the phone drawer after navigating, and with Escape.
   useEffect(() => {

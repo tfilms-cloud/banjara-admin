@@ -6,7 +6,7 @@ import type { AuthUser } from "@/types/auth";
  * so `?next=` cannot be used as an open redirect.
  */
 const SAFE_NEXT =
-  /^\/(?:$|\?|account(?:\/|\?|$)|bookings(?:\/|\?|$)|messages(?:\/|\?|$)|explore(?:\?|$)|trips\/[^/]+(?:\/book)?(?:\?|#|$)|hotels\/|tours\/|restaurants\/|guides\/|agencies\/)/;
+  /^\/(?:$|\?|account(?:\/|\?|$)|bookings(?:\/|\?|$)|messages(?:\/|\?|$)|explore(?:\?|$)|intercity(?:\/|\?|$)|trips\/[^/]+(?:\/book)?(?:\?|#|$)|hotels\/|tours\/|restaurants\/|guides\/|agencies\/)/;
 
 export function safeNext(next: string | null | undefined): string | null {
   if (!next || next.startsWith("//")) return null;

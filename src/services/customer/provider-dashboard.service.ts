@@ -228,6 +228,25 @@ export type BookingDetail = ProviderBooking & {
   discount: number;
   currency: string;
   bookingType: string;
+  /** City to City rides only: door-to-door details. */
+  intercity: {
+    rideRequestId: string;
+    leg: string;
+    rideType: string;
+    pickupAddress: string;
+    pickupLat: number | null;
+    pickupLng: number | null;
+    dropoffAddress: string;
+    dropoffLat: number | null;
+    dropoffLng: number | null;
+    luggage: { bags: number; large: number };
+    passengers: number;
+    notes: string;
+  } | null;
+  fareBreakdown: { leg: string; lines: Array<{ code: string; label: string; amount: number }> } | null;
+  /** The other leg of a City to City round trip. */
+  returnBookingId: string;
+  outboundBookingId: string;
   /** Hotel stays only. */
   stay: {
     hotelName: string;
@@ -319,7 +338,43 @@ function mapTransportDetail(b: Row): BookingDetail {
     discount: num(b.discount),
     currency: text(b.currency) || "PKR",
     bookingType: text(b.bookingType) || "transport",
+    intercity: mapIntercity(transport.intercity),
+    fareBreakdown: mapFareBreakdown(b.fareBreakdown),
+    returnBookingId: text(b.returnBookingId),
+    outboundBookingId: text(b.outboundBookingId),
     stay: null,
+  };
+}
+
+const coord = (value: unknown) => (value == null || value === "" || !Number.isFinite(Number(value)) ? null : Number(value));
+
+function mapIntercity(raw: unknown): BookingDetail["intercity"] {
+  if (!raw || typeof raw !== "object") return null;
+  const i = raw as Row;
+  const luggage = (i.luggage ?? {}) as Row;
+  return {
+    rideRequestId: text(i.rideRequestId),
+    leg: text(i.leg),
+    rideType: text(i.rideType),
+    pickupAddress: text(i.pickupAddress),
+    pickupLat: coord(i.pickupLat),
+    pickupLng: coord(i.pickupLng),
+    dropoffAddress: text(i.dropoffAddress),
+    dropoffLat: coord(i.dropoffLat),
+    dropoffLng: coord(i.dropoffLng),
+    luggage: { bags: num(luggage.bags), large: num(luggage.large) },
+    passengers: num(i.passengers),
+    notes: text(i.notes),
+  };
+}
+
+function mapFareBreakdown(raw: unknown): BookingDetail["fareBreakdown"] {
+  if (!raw || typeof raw !== "object") return null;
+  const f = raw as Row;
+  const lines = (Array.isArray(f.lines) ? f.lines : []) as Row[];
+  return {
+    leg: text(f.leg),
+    lines: lines.map((line) => ({ code: text(line.code), label: text(line.label), amount: num(line.amount) })),
   };
 }
 

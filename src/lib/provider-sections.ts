@@ -6,6 +6,7 @@ import {
   CarFront,
   CreditCard,
   MessageSquare,
+  Route,
   Settings,
   Star,
   UserRound,
@@ -36,6 +37,12 @@ export const PROVIDER_SECTIONS: Record<
     icon: CarFront,
     intro: "Publish rides on your routes and manage seats.",
     points: ["Create a trip with date, time, fare and pickup points", "See seats booked on each trip", "Edit or cancel a trip", "Your vehicle, routes and pickup stops"],
+  },
+  intercity: {
+    title: "City to City",
+    icon: Route,
+    intro: "Door-to-door ride requests between cities.",
+    points: ["Accept, counter or decline requests", "Start and complete your rides", "Share your location with the traveller"],
   },
   bookings: {
     title: "Bookings",

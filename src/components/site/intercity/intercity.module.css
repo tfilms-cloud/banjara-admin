@@ -1,0 +1,390 @@
+/* City to City rider pages. Builds on trips/trip-booking.module.css (its tokens live on .page). */
+
+.topLinks {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.points {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.point {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pointChosen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--sand);
+}
+.linkButton {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.detected {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f0fbf5;
+  color: #067647;
+  font-weight: 500;
+}
+
+.choiceRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-top: 12px;
+}
+.fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.fields label small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.fields :is(input, select) {
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+}
+.fields :is(input, select):focus {
+  border-color: var(--teal);
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.fieldError {
+  grid-column: 1 / -1;
+  color: #a9321e;
+  font-size: 12px;
+}
+
+.cash {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #7a4a07;
+  font-size: 12.5px;
+}
+
+/* Request page */
+.statusHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--sand);
+  color: #4a5868;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badgeOpen {
+  background: #e6f7f6;
+  color: var(--teal);
+}
+.badgeDone {
+  background: rgba(22, 179, 100, 0.14);
+  color: #067647;
+}
+.badgeOff {
+  background: #fdf2f0;
+  color: #ba3b24;
+}
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff4dd;
+  color: #a15c07;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.offer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+a.offer {
+  color: inherit;
+  text-decoration: none;
+}
+a.offer:hover {
+  border-color: var(--teal);
+}
+.offerMain {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.offerMain span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.offerPrice {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+}
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tracking */
+.leg {
+  margin-top: 18px;
+}
+.leg h3 {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.track {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.trackMap {
+  position: relative;
+  height: 280px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  /* A view of the driver's position: the pin stays on it. */
+  pointer-events: none;
+}
+.trackMap > div {
+  height: 100%;
+  min-height: 0;
+}
+.trackStatus {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+}
+.live {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px #16b36426;
+}
+
+@media (max-width: 640px) {
+  .points,
+  .fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Rides near the pickup */
+.nearby {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.nearbyHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nearbyHead h3 {
+  font-size: 15px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.chip:hover {
+  border-color: var(--teal);
+}
+.chipOn {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+.nearbyNote {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: #fff8e8;
+  color: #7a4a07;
+  font-size: 12.5px;
+}
+.nearbyMap {
+  position: relative;
+  height: 260px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #e8edf3;
+}
+.nearbyCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.legend {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 5px 9px;
+  list-style: none;
+  border-radius: 10px;
+  background: #ffffffe6;
+  font-size: 11px;
+  pointer-events: none;
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.nearbySub {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.distance {
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.searching {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+/* "Use my current location" under an empty pickup, and the location notes in the picker. */
+.useMe {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.useMe:hover {
+  text-decoration: underline;
+}
+.locNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: #1e40af;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.locNote svg {
+  flex: none;
+  margin-top: 2px;
+}
